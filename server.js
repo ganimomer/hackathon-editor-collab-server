@@ -59,6 +59,6 @@ io.on('connection', (socket) => {
   })
 })
 
-const port = process.argv[2]
-console.log(port)
+const port = process.argv[2] || 8080;
+console.log('starting on port', port)
 http.listen(parseInt(port, 10))
