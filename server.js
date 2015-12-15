@@ -31,4 +31,6 @@ io.on('connection', (socket) => {
   })
 })
 
-http.listen(8080)
+let port = process.argv[2]
+console.log(port)
+http.listen(parseInt(port, 10))

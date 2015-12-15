@@ -9,21 +9,23 @@
 <body>
   <script>
     const socket = io()
+    const userId = prompt('Tell your name!', 'Clint Eastwood')
 
     window.send = function (message) {
       socket.emit('update', {
           siteId: 1337,
+          userId,
           message
       })
     }
 
     socket.on('connect', function () {
       socket.on('change', function (data) {
-        console.log(`data is ${data}`)
+        console.log(`${data.userId}: ${data.message}`)
       })
 
       socket.emit('join', {
-        userId: 0,
+        userId,
         siteId: 1337
       })
     })
