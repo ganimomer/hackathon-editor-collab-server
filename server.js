@@ -33,7 +33,11 @@ io.on('connection', (socket) => {
     socket.broadcast.to(data.siteId).emit('enter', data)
   })
 
-  socket.on('message', data => socket.broadcast.to(data.siteId).emit('message', data))
+  socket.on('message', (data) => {
+    console.log(`message: ${JSON.stringify(data)}`)
+    data.userId = userId
+    socket.broadcast.to(siteId).emit('message', data)
+  })
 
   socket.on('disconnect', () => {
     console.log(`${userId} has disconnected`)
