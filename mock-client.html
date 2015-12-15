@@ -10,10 +10,11 @@
   <script>
     const socket = io()
     const userId = prompt('Tell your name!', 'Clint Eastwood')
+    const siteId = location.search.match(/id=(\d+)$/)[1]
 
     window.send = function (message) {
       socket.emit('update', {
-          siteId: 1337,
+          siteId,
           userId,
           message
       })
@@ -24,9 +25,13 @@
         console.log(`${data.userId}: ${data.message}`)
       })
 
+      socket.on('enter', function(data) {
+        console.log(`${data.userId} has joined`)
+      })
+
       socket.emit('join', {
         userId,
-        siteId: 1337
+        siteId
       })
     })
 

@@ -19,7 +19,9 @@ io.on('connection', (socket) => {
   socket.on('join', (data) => {
   	userId = data.userId
   	siteId = data.siteId
-    socket.join(data.siteId);
+    socket.join(data.siteId)
+    socket.broadcast.to(data.siteId).emit('enter', data)
+    console.log(`${data.userId} has joined site ${data.siteId}`)
   })
 
   socket.on('update', (data) => {
