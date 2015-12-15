@@ -1,0 +1,19 @@
+{
+  "name": "hackathon-editor-collab-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ganimomer/hackathon-editor-collab-server.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ganimomer/hackathon-editor-collab-server/issues"
+  },
+  "homepage": "https://github.com/ganimomer/hackathon-editor-collab-server#readme"
+}
