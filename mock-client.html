@@ -8,30 +8,30 @@
 
 <body>
   <script>
-    const socket = io()
-    const userId = prompt('Tell your name!', 'Clint Eastwood')
-    const siteId = location.search.match(/id=(\d+)$/)[1]
+    const socket = io('http://172.31.9.53:8081')
+    const userId = 'Anonymous';
+    const siteId = '71f4285f-66a9-41f4-a158-80320ba849da';
 
     window.send = function (message) {
-      socket.emit('update', {
+      socket.emit('message', {
+          type: 'bullshit',
           siteId,
           userId,
-          message
-      })
-    }
+      });
+    };
 
     socket.on('connect', function () {
-      socket.on('change', function (data) {
-        console.log(`${data.userId}: ${data.message}`)
+      socket.on('message', function (data) {
+          console.log('got message', data);
       })
 
       socket.on('enter', function(data) {
-        console.log(`${data.userId} has joined`)
+          console.log(`${data.userId} has joined`)
       })
 
       socket.emit('join', {
-        userId,
-        siteId
+          userId,
+          siteId
       })
     })
 
