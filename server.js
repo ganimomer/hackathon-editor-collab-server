@@ -23,7 +23,7 @@ io.on('connection', (socket) => {
   })
 
   socket.on('update', (data) => {
-  	io.to(data.siteId).emit('change', data.message)
+  	socket.broadcast.to(data.siteId).emit('change', data)
   })
 
   socket.on('disconnect', () => {
