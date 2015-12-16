@@ -8,33 +8,35 @@
 
 <body>
   <script>
-    const socket = io('http://172.31.9.53:8081')
-    const userId = 'Anonymous';
-    const siteId = '71f4285f-66a9-41f4-a158-80320ba849da';
 
-    window.send = function (message) {
-      socket.emit('message', {
-          type: 'bullshit',
-          siteId,
-          userId,
-      });
-    };
+    window.join = function (userId) {
+      const siteId = location.search.match(/id=(\d+)/)[1]
+      const socket = io()
 
-    socket.on('connect', function () {
-      socket.on('message', function (data) {
-          console.log('got message', data);
+      socket.on('connect', function () {
+        socket.on('message', function (data) {
+            console.log('got message', data);
+        })
+
+        socket.on('enter', function(data) {
+            console.log(`${data.userId} has joined`)
+        })
+
+        socket.emit('join', {
+            userId,
+            siteId
+        })
       })
 
-      socket.on('enter', function(data) {
-          console.log(`${data.userId} has joined`)
-      })
-
-      socket.emit('join', {
-          userId,
-          siteId
-      })
-    })
-
+      window.send = function (message) {
+        socket.emit('message', {
+            type: 'bullshit',
+            siteId,
+            userId,
+            message
+        });
+      };
+    }
 
   </script>
 </body>
