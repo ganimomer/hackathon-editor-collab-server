@@ -20,9 +20,25 @@ io.on('connection', (socket) => {
   console.log('connected')
 
   socket.on('join', data => {
-    sessionManager.join(socket.id, data)
-    socket.join(data.siteId)
-    socket.broadcast.to(data.siteId).emit('enter', data)
+    sessionManager.addUser(socket.id, data.userId)
+    const editor = sessionManager.getSiteEditor(data.siteId)
+    if (editor) {
+      io.to(editor).emit('request-history', { id: socket.id, siteId: data.siteId });
+    } else {
+      sessionManager.join(Object.assign(data, { id: socket.id }))
+      socket.join(data.siteId)
+    }
+  })
+
+  socket.on('history', data => {
+    const viewerSocket = io.sockets.connected[data.id]
+    viewerSocket.emit('history', data.history);
+    sessionManager.join(data)
+    viewerSocket.join(data.siteId)
+    viewerSocket.broadcast.to(data.siteId).emit('enter', {
+      userId: sessionManager.getUser(data.id),
+      siteId: data.siteId
+    })
   })
 
   socket.on('message', data => {
@@ -36,7 +52,7 @@ io.on('connection', (socket) => {
     console.log(`${userId} has disconnected`)
 
     forAllRooms(socket, room => {
-      const newEditor = sessionManager.leaveRoom(socket.id, room)
+      const newEditor = sessionManager.leaveSite(socket.id, room)
       if (newEditor) {
         io.to(room).emit('leave', { userId, newEditor })
       }

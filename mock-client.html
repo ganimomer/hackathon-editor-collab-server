@@ -12,10 +12,24 @@
     window.join = function (userId) {
       const siteId = location.search.match(/id=(\d+)/)[1]
       const socket = io()
+      const history = []
+
 
       socket.on('connect', function () {
         socket.on('message', function (data) {
+            history.push(data)
             console.log('got message', data);
+        })
+
+        socket.on('request-history', function (data) {
+            socket.emit('history', Object.assign(data, { history }))
+            console.log('got history request', data);
+        })
+
+        socket.on('history', function (data) {
+          console.log('history')
+          data.forEach(message => console.log(message))
+          console.log('-------')
         })
 
         socket.on('enter', function(data) {
@@ -29,12 +43,13 @@
       })
 
       window.send = function (message) {
-        socket.emit('message', {
-            type: 'bullshit',
+        const data = {
             siteId,
             userId,
             message
-        });
+        }
+        history.push(data)
+        socket.emit('message', data);
       };
     }
 
