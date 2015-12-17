@@ -26,6 +26,7 @@ io.on('connection', (socket) => {
       console.log(`${socket.id} requests history from ${editor}`)
       io.to(editor).emit('request-history', { id: socket.id, siteId: data.siteId });
     } else {
+      console.log(`${socket.id} is the first human on the Earth`)
       sessionManager.join(Object.assign(data, { id: socket.id }))
       socket.join(data.siteId)
     }
@@ -64,6 +65,7 @@ io.on('connection', (socket) => {
   })
 })
 
-const port = process.argv[2] || 8080;
+//const port = process.argv[2] || 8080;
+const port = 8080;
 console.log('starting on port', port)
 http.listen(parseInt(port, 10))
