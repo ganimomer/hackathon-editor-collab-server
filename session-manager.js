@@ -17,13 +17,13 @@ module.exports = {
     const session = sessions.get(data.siteId)
     if (session) {
       session.viewing.push(data.id)
-      console.log(`${user} has joined site ${data.siteId}`)
+      console.log(`${user}(${data.id}) has joined site ${data.siteId}`)
     } else {
       sessions.set(data.siteId, {
         editing: data.id,
         viewing: []
       })
-      console.log(`${user} has started a session for site ${data.siteId}`)
+      console.log(`${user}(${data.id}) has started a session for site ${data.siteId}`)
     }
   },
 

@@ -17,12 +17,13 @@ const forAllRooms = (socket, action) => {
 }
 
 io.on('connection', (socket) => {
-  console.log('connected')
+  console.log('connected', socket.id)
 
   socket.on('join', data => {
     sessionManager.addUser(socket.id, data.userId)
     const editor = sessionManager.getSiteEditor(data.siteId)
     if (editor) {
+      console.log(`${socket.id} requests history from ${editor}`)
       io.to(editor).emit('request-history', { id: socket.id, siteId: data.siteId });
     } else {
       sessionManager.join(Object.assign(data, { id: socket.id }))
@@ -32,6 +33,8 @@ io.on('connection', (socket) => {
 
   socket.on('history', data => {
     const viewerSocket = io.sockets.connected[data.id]
+    const editor = sessionManager.getSiteEditor(data.siteId)
+    console.log(`${editor} sent history to ${viewerSocket.id}`)
     viewerSocket.emit('history', data.history);
     sessionManager.join(data)
     viewerSocket.join(data.siteId)
@@ -42,7 +45,8 @@ io.on('connection', (socket) => {
   })
 
   socket.on('message', data => {
-    console.log(`message: ${JSON.stringify(data)}`)
+    // console.log(`message: ${JSON.stringify(data)}`)
+    console.log(`message: from ${socket.id} to `)
     data.userId = sessionManager.getUser(socket.id)
     forAllRooms(socket, room => socket.broadcast.to(room).emit('message', data))
   })
