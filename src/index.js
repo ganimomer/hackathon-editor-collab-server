@@ -9,15 +9,19 @@ app.get('/', function (req, res) {
     res.sendFile(__dirname + '/mock-client.html')
 });
 
-let state = reducer(undefined, {});
+let state;
 const api = require('./utils/api');
 const getState = () => state;
 const reducer = require('./reducers/index');
 const dispatch = event => {
-    console.log('dispatching event', event.constructor.name, event);
+    console.log('dispatching event', event.constructor.name, JSON.stringify(event));
     state = reducer(state, event);
+    console.log('state became');
+    console.dir(state);
     return state;
 };
+
+dispatch({});
 
 const commands = _.mapValues(require('./commands'), function (fn) {
     return _.curry(fn)(dispatch, getState, api);
@@ -28,9 +32,9 @@ io.on('connection', (socket) => {
 
   socket.on('join', ({ id, userId, siteId }) => {
       commands.addParticipant({
-          participantId: id,
           sessionId: siteId,
-          info: {
+          participantId: id,
+          participantInfo: {
               userId,
           }
       });

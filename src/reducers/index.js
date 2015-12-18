@@ -1,4 +1,5 @@
-const events = require('./events');
+const events = require('../events');
+const Session = require('../utils/Session');
 
 function getInitialState() {
     return {
@@ -6,14 +7,14 @@ function getInitialState() {
     };
 }
 
-module.exports = function reducer(state, event) {
+module.exports = function reducer(state = getInitialState(), event) {
     if (event instanceof events.ServerResetEvent) {
         state.sessions = new Map();
     }
 
     if (event instanceof events.SessionCreatedEvent) {
         const { sessionId, presenterId } = event;
-        state.sessions.set(sessionId, new Session({ sessionId, presenterId });
+        state.sessions.set(sessionId, new Session({ sessionId, presenterId }));
     }
 
     if (event instanceof events.ParticipantJoinedEvent) {
@@ -26,6 +27,18 @@ module.exports = function reducer(state, event) {
         const { sessionId, participantId } = event;
         const session = state.sessions.get(sessionId);
         session.participants.delete(participantId);
+    }
+
+    if (event instanceof events.SnapshotRequestedEvent) {
+        const { sessionId, participantId } = event;
+        const session = state.sessions.get(sessionId);
+        session.waitingSnapshot.add(participantId);
+    }
+
+    if (event instanceof events.SnapshotDeliveredEvent) {
+        const { sessionId, participantId } = event;
+        const session = state.sessions.get(sessionId);
+        session.waitingSnapshot.delete(participantId);
     }
 
     return state;

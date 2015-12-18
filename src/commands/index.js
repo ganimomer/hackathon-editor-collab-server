@@ -7,15 +7,34 @@ const commands = {
         const session = sessions.get(sessionId);
 
         if (session) {
-            api.requestSnapshot({ presenterId: session.presenterId, });
-            // const socket = api.getSocket(session.presenterId);
-            // socket.emit('request-history', { });
+            dispatch(new events.SnapshotRequestedEvent({ sessionId, participantId }));
+            api.requestSnapshot({ presenterId: session.presenterId });
+        } else {
+            console.error('session', sessionId, 'does not exist');
         }
     },
     sendSnapshot(dispatch, getState, api, command) {
+        const { sessionId, presenterId } = command;
+        const { sessions } = getState();
+        const session = sessions.get(sessionId);
+
+        if (session && presenterId === session.presenterId) {
+            session.waitingSnapshot.forEach(participantId => {
+                const promise = api.sendSnapshot({ participantId, snapshot: command.snapshot });
+                promise.then(() => dispatch(new SnapshotDeliveredEvent(sessionId, participantId)));
+            });
+        } else {
+            if (!session) {
+                console.error('session', sessionId, 'does not exist');
+            }
+
+            if (session && presenterId === session.presenterId) {
+                console.error('invalid participant', participantId, 'tried to mimick', presenterId);
+            }
+        }
     },
     addParticipant(dispatch, getState, api, command) {
-        const { sessionId, participantId, info } = command;
+        const { sessionId, participantId, participantInfo } = command;
 
         if (!sessionId) {
             return;
@@ -27,15 +46,15 @@ const commands = {
             dispatch(new events.ParticipantJoinedEvent({
                 sessionId,
                 participantId,
-                participantInfo: info
+                participantInfo,
             }));
 
-            commands.requestSnapshot({ sessionId, participantId });
+            this.requestSnapshot({ sessionId, participantId });
         } else {
             dispatch(new events.SessionCreatedEvent({
                 sessionId,
                 presenterId: participantId,
-                presenterInfo: presenterInfo,
+                presenterInfo: participantInfo,
             }));
         }
     },
