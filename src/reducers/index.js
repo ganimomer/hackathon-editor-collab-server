@@ -35,10 +35,10 @@ module.exports = function reducer(state = getInitialState(), event) {
         session.waitingSnapshot.add(participantId);
     }
 
-    if (event instanceof events.SnapshotDeliveredEvent) {
-        const { sessionId, participantId } = event;
+    if (event instanceof events.SnapshotSentEvent) {
+        const { sessionId } = event;
         const session = state.sessions.get(sessionId);
-        session.waitingSnapshot.delete(participantId);
+        session.waitingSnapshot.clear();
     }
 
     return state;

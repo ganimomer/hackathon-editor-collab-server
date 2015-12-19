@@ -4,6 +4,7 @@ module.exports = {
     SessionAbandonedEvent: require('./SessionAbandonedEvent'),
     ParticipantJoinedEvent: require('./ParticipantJoinedEvent'),
     ParticipantLeftEvent: require('./ParticipantLeftEvent'),
+    PresenterChangedEvent: require('./PresenterChangedEvent'),
     SnapshotRequestedEvent: require('./SnapshotRequestedEvent'),
-    SnapshotDeliveredEvent: require('./SnapshotDeliveredEvent'),
+    SnapshotSentEvent: require('./SnapshotSentEvent'),
 };
