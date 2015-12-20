@@ -3,13 +3,13 @@ const {
 } = require('./constants');
 
 module.exports = {
-    ADD_PARTICIPANT: i => ({
+    HANDLE_JOIN_REQUEST: i => ({
         sessionId: SITE(1),
         participant: PARTICIPANT_DETAILS(i),
     }),
     SEND_SNAPSHOT: i => ({
         issuerId: SOCKET(i),
-        snapshot: SNAPSHOT(1, i),
+        snapshot: SNAPSHOT(),
     }),
     BROADCAST_CHANGE: i => ({
         issuerId: SOCKET(i),
@@ -30,13 +30,17 @@ module.exports = {
         issuerId: SOCKET(i),
         spectatorId: SOCKET(j),
     }),
-    REMOVE_PARTICIPANT: i => ({
+    DISCONNECT_PARTICIPANT: i => ({
         participantId: SOCKET(i),
     }),
     REQUEST_SNAPSHOT: i => ({
-        issuerId: SOCKET(i),
+        participantId: SOCKET(i),
     }),
-    REMOVE_SPECTATOR: i => ({
+    DISCONNECT_SPECTATOR: i => ({
         spectatorId: SOCKET(i),
+    }),
+    DISCONNECT_GHOST: (i, force) => ({
+        ghostId: SOCKET(i),
+        isForce: force,
     }),
 };

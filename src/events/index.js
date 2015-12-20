@@ -2,9 +2,9 @@ module.exports = {
     ServerResetEvent: require('./ServerResetEvent'),
     SessionCreatedEvent: require('./SessionCreatedEvent'),
     SessionAbandonedEvent: require('./SessionAbandonedEvent'),
-    SpectatorJoinedEvent: require('./SpectatorJoinedEvent'),
+    ParticipantJoiningEvent: require('./ParticipantJoiningEvent'),
+    GhostBecameSpectatorEvent: require('./GhostBecameSpectatorEvent'),
+    GhostDisconnectedEvent: require('./GhostDisconnectedEvent'),
     SpectatorLeftEvent: require('./SpectatorLeftEvent'),
     PresenterChangedEvent: require('./PresenterChangedEvent'),
-    SnapshotRequestedEvent: require('./SnapshotRequestedEvent'),
-    SnapshotSentEvent: require('./SnapshotSentEvent'),
 };

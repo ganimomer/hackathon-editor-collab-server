@@ -28,18 +28,18 @@ module.exports = function reducer(state = getInitialState(), event) {
         state.sessions.delete(sessionId);
     }
 
-    if (event instanceof events.SpectatorJoinedEvent) {
-        const { sessionId, spectator } = event;
+    if (event instanceof events.ParticipantJoiningEvent) {
+        const { sessionId, participant } = event;
         const session = state.sessions.get(sessionId);
-        session.spectators.set(spectator.id, spectator);
-        state.socket2session.set(spectator.id, sessionId);
+        session.ghosts.set(participant.id, participant);
+        state.socket2session.set(participant.id, sessionId);
     }
 
     if (event instanceof events.SpectatorLeftEvent) {
         const { sessionId, spectatorId } = event;
         const session = state.sessions.get(sessionId);
         session.spectators.delete(spectatorId);
-        session.waitingSnapshot.delete(spectatorId);
+        session.ghosts.delete(spectatorId);
         state.socket2session.delete(spectatorId);
     }
 
@@ -53,16 +53,13 @@ module.exports = function reducer(state = getInitialState(), event) {
         session.spectators.set(previousPresenter.id, previousPresenter);
     }
 
-    if (event instanceof events.SnapshotRequestedEvent) {
-        const { sessionId, spectatorId } = event;
+    if (event instanceof events.GhostBecameSpectatorEvent) {
+        const { sessionId, participantId } = event;
         const session = state.sessions.get(sessionId);
-        session.waitingSnapshot.add(spectatorId);
-    }
 
-    if (event instanceof events.SnapshotSentEvent) {
-        const { sessionId } = event;
-        const session = state.sessions.get(sessionId);
-        session.waitingSnapshot.clear();
+        const participant = session.ghosts.get(participantId);
+        session.ghosts.delete(participantId);
+        session.spectators.set(participantId, participant);
     }
 
     return state;

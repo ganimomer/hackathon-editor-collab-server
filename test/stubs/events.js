@@ -13,20 +13,21 @@ module.exports = {
     SESSION_ABANDONED: () => new events.SessionAbandonedEvent({
         sessionId: SITE(1),
     }),
-    SPECTATOR_JOINED: (i) => new events.SpectatorJoinedEvent({
+    PARTICIPANT_JOINING: (i) => new events.ParticipantJoiningEvent({
         sessionId: SITE(1),
-        spectator: PARTICIPANT_DETAILS(i),
+        participant: PARTICIPANT_DETAILS(i),
     }),
     SPECTATOR_LEFT: (i) => new events.SpectatorLeftEvent({
         sessionId: SITE(1),
         spectatorId: SOCKET(i),
     }),
-    SNAPSHOT_REQUESTED: i => (new events.SnapshotRequestedEvent({
+    GHOST_BECAME_SPECTATOR: i => (new events.GhostBecameSpectatorEvent({
         sessionId: SITE(1),
-        spectatorId: SOCKET(i),
+        participantId: SOCKET(i),
     })),
-    SNAPSHOT_SENT: () => (new events.SnapshotSentEvent({
+    GHOST_DISCONNECTED: i => (new events.GhostDisconnectedEvent({
         sessionId: SITE(1),
+        participantId: SOCKET(i),
     })),
     PRESENTER_CHANGED: (i) => {
         return new events.PresenterChangedEvent({

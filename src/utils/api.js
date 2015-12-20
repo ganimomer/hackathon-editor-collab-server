@@ -1,38 +1,53 @@
 const _ = require('lodash');
 
-function notImplemented() {
-    throw 'not implemented';
+function requestSnapshot(socket) {
+    socket.emit('request-snapshot');
 }
 
-function requestSnapshot(socket, { presenterId }) {
-    notImplemented();
+function sendSession(socket, { id, presenterId, participants, snapshot }) {
+    socket.emit('session', session);
 }
 
-function sendSnapshot(socket, { history }) {
-    notImplemented();
+function announcePresenterChanged(socket, { presenterId }) {
+    socket.emit('presenter-changed', { presenterId });
 }
 
-function announcePresenter(socket, { presenter }) {
-    notImplemented();
+function announceNewSpectators(socket, newSpectators) {
+    socket.emit('spectator-joined', newSpectators);
 }
 
-function announceSpectators(socket, { spectators }) {
-    notImplemented();
+function announceLeavingSpectator(socket, { spectatorId }) {
+    socket.emit('spectator-left', { spectatorId });
 }
 
-function announceNewSpectators(socket, { spectatorIds }) {
-    notImplemented();
+function broadcastChange(socket, change) {
+    socket.emit('change', change);
 }
 
-function announceExitingSpectators(socket, { spectators }) {
-    notImplemented();
+function broadcastMessage(socket, { participantId, message }) {
+    socket.emit('message', { participantId, message });
+    // TODO: find out what it means
 }
 
 function resolveSockets(io, socket, state, { to, except, broadcastTo }) {
-    // to = _.isArray(to) ? to : [to];
-    // broadcastTo = _.isArray(broadcastTo) ? broadcastTo : [broadcastTo];
-    // except = _.isArray(except) ? except : [except];
-    return [];
+    let recipients;
+
+    if (!to && !broadcastTo) {
+        throw 'unresolvable sockets, ya';
+    }
+
+    if (to) {
+        recipients = _.isArray(to) ? to : [to];
+    } else {
+        const { presenter, spectators } = state.sessions.get(broadcastTo);
+        recipients = _.pluck([presenter, ...spectators], 'id');
+    }
+
+    if (except) {
+        recipients = _.without(recipients, _.isArray(except) ? except : [except]);
+    }
+
+    return recipients.map(id => io.to(id));
 }
 
 function wrap(fn) {
@@ -53,11 +68,12 @@ function NetworkAPI(io, socket, getState) {
 
 NetworkAPI.prototype = {
     requestSnapshot: wrap(requestSnapshot),
-    sendSnapshot: wrap(sendSnapshot),
-    announcePresenter: wrap(announcePresenter),
-    announceSpectators: wrap(announceSpectators),
+    sendSession: wrap(sendSession),
+    announcePresenterChanged: wrap(announcePresenterChanged),
     announceNewSpectators: wrap(announceNewSpectators),
-    announceExitingSpectators: wrap(announceExitingSpectators),
+    announceLeavingSpectator: wrap(announceLeavingSpectator),
+    broadcastChange: wrap(broadcastChange),
+    broadcastMessage: wrap(broadcastMessage),
 };
 
 module.exports = NetworkAPI;

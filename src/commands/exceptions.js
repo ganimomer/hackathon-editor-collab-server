@@ -3,18 +3,18 @@ function InvalidCommandException(command, reason) {
     this.reason = reason;
 }
 
-function AccessDeniedException(command, reason) {
-    this.command = command;
+function AccessDeniedException(issuerId, reason) {
+    this.issuerId = issuerId;
     this.reason = reason;
 }
 
-function UnregisteredIssuerException(issuerId) {
-    this.issuerId = issuerId;
+function UnknownSpectatorException(spectatorId) {
+    this.spectatorId = spectatorId;
 }
 
-function IssuerIsNotSpectatorException(sessionId, spectatorId) {
+function ParticipantShouldNotWaitSnapshotException(sessionId, participantId) {
     this.sessionId = sessionId;
-    this.spectatorId = spectatorId;
+    this.participantId = participantId;
 }
 
 function EmptySessionException(sessionId) {
@@ -37,7 +37,7 @@ module.exports = {
     InvalidCommandException,
     AccessDeniedException,
     UnregisteredIssuerException,
-    IssuerIsNotSpectatorException,
+    ParticipantShouldNotWaitSnapshotException,
     EmptySessionException,
     MissingSessionException,
     EmptySessionPointerException,

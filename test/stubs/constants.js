@@ -11,9 +11,8 @@ const PARTICIPANT_DETAILS = i => ({
     email: EMAIL(i),
 });
 
-const SNAPSHOT = i => ({
-    siteId: SITE(i),
-    presenterId: SOCKET(i),
+const SNAPSHOT = () => ({
+    siteId: SITE(1),
     bla: 'bla',
 });
 

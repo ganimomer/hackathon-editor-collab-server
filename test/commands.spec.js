@@ -39,140 +39,112 @@ describe('commands:', () => {
         expect(state.sessions).to.be.empty;
     });
 
-    describe('when first participant is added', function () {
+    describe('when first participant connects', function () {
         beforeEach(function () {
-            commands.addParticipant(stub.commands.ADD_PARTICIPANT(1));
+            commands.handleJoinRequest(stub.commands.HANDLE_JOIN_REQUEST(1));
         });
 
-        it('creates a session when first participant added', function () {
+        it('creates a session, when first participant connects to the site editing', function () {
             expect(eventsQueue).to.have.length(1);
             expect(eventsQueue[0]).to.be.an.instanceof(events.SessionCreatedEvent);
             expect(eventsQueue[0]).to.eql(stub.events.SESSION_CREATED);
         });
 
-        it('announces that (s)he is a presenter right now', function () {
-            const presenter = stub.constants.PARTICIPANT_DETAILS(1);
-            expect(api.announcePresenter).to.have.been.calledWith(
-                { to : presenter.id }, { presenter }
-            );
-        });
-
-        it('announces an empty list of spectators', function () {
-            expect(api.announceSpectators).to.have.been.calledWith(
-                { to: stub.constants.SOCKET(1) },
-                { spectators: [] }
+        it('sends session information (without snapshot, presenterId===participant.id) to participant', function () {
+            const firstParticipant = stub.constants.PARTICIPANT_DETAILS(1);
+            expect(api.sendSession).to.have.been.calledWith({ to: firstParticipant.id },
+                {
+                    id: firstParticipant.id,
+                    presenterId: firstParticipant.id,
+                    participants: {
+                        [firstParticipant.id]: firstParticipant.email,
+                    },
+                }
             );
         });
     });
 
-    describe('when participant is joining existing session', function () {
+    describe('when participant wants to join an existing session', function () {
         beforeEach(function () {
             commands.requestSnapshot = sinon.spy();
             state = reducer(state, stub.events.SESSION_CREATED);
 
-            commands.addParticipant(stub.commands.ADD_PARTICIPANT(2));
+            commands.handleJoinRequest(stub.commands.HANDLE_JOIN_REQUEST(2));
         });
 
-        it('adds participant to the session', function () {
+        it('marks participant as "joining" to the session', function () {
             expect(eventsQueue).to.have.length(1); // NOTE: not 2, because we noop'ed requestSnapshot
-            expect(eventsQueue[0]).to.be.an.instanceof(events.SpectatorJoinedEvent);
-            expect(eventsQueue[0]).to.eql(stub.events.SPECTATOR_JOINED(2));
+            expect(eventsQueue[0]).to.be.an.instanceof(events.ParticipantJoiningEvent);
+            expect(eventsQueue[0]).to.eql(stub.events.PARTICIPANT_JOINING(2));
         });
 
-        it('requests snapshot from presenter (via command call)', function () {
-            expect(commands.requestSnapshot).to.have.been.calledWith(stub.commands.REQUEST_SNAPSHOT(2));
-        });
-
-        it('informs participant via network about current presenter', function () {
-            expect(api.announcePresenter).to.have.been.calledWith(
-                { to: stub.constants.SOCKET(2) },
-                { presenter: stub.constants.PARTICIPANT_DETAILS(1) }
-            );
-        });
-
-        it('informs participant via network about current spectators', function () {
-            expect(api.announceSpectators).to.have.been.calledWith(
-                { to: stub.constants.SOCKET(2) },
-                { spectators: [ stub.constants.PARTICIPANT_DETAILS(2) ] }
-            );
-        });
-
-        it('broadcasts to all participants except a newbie that the newbie has joined', function () {
-            expect(api.announceNewSpectators).to.have.been.calledWith({
-                broadcastTo: stub.constants.SITE(1),
-                except: stub.constants.SOCKET(2),
-            }, {
-                spectators: [stub.constants.PARTICIPANT_DETAILS(2)],
-            });
-        });
-    });
-
-    describe('when participant is requesting a snapshot', function () {
-        beforeEach(function () {
-            state = reducer(state, stub.events.SESSION_CREATED);
-        });
-
-        describe('and participant is existing', function () {
-            beforeEach(function () {
-                state = reducer(state, stub.events.SPECTATOR_JOINED(2));
-
-                commands.requestSnapshot(stub.commands.REQUEST_SNAPSHOT(2));
-            });
-
-            it('emits a SnapshotRequestedEvent with participantId', function () {
-                expect(eventsQueue).to.have.length(1);
-                expect(eventsQueue[0]).to.be.an.instanceof(events.SnapshotRequestedEvent);
-                expect(eventsQueue[0]).to.eql(stub.events.SNAPSHOT_REQUESTED(2));
-            });
-
-            it('sends a request over network to presenter\'s socket', function () {
-                expect(api.requestSnapshot).to.have.been.calledWith({
-                    to: stub.constants.SOCKET(1)
-                });
+        it('requests a snapshot from presenter via network', function () {
+            expect(api.requestSnapshot).to.have.been.calledWith({
+                to: stub.constants.SOCKET(1)
             });
         });
     });
 
     describe('when presenter is sending a snapshot back', function () {
-        let snapshot;
-
         beforeEach(function () {
             state = reducer(state, stub.events.SESSION_CREATED);
-            state = reducer(state, stub.events.SPECTATOR_JOINED(2));
-            state = reducer(state, stub.events.SPECTATOR_JOINED(3));
-            state = reducer(state, stub.events.SNAPSHOT_REQUESTED(2));
-            state = reducer(state, stub.events.SNAPSHOT_REQUESTED(3));
+            state = reducer(state, stub.events.PARTICIPANT_JOINING(2));
 
-            const command = stub.commands.SEND_SNAPSHOT(1);
-            snapshot = command.snapshot;
-            commands.sendSnapshot(command);
+            commands.sendSnapshot(stub.commands.SEND_SNAPSHOT(1));
         });
 
-        it('emits a SnapshotSent event', function () {
+        it('transforms a ghost into a spectator', function () {
             expect(eventsQueue).to.have.length(1);
-            expect(eventsQueue[0]).to.be.an.instanceof(events.SnapshotSentEvent);
-            expect(eventsQueue[0]).to.eql(stub.events.SNAPSHOT_SENT());
+            expect(eventsQueue[0]).to.be.an.instanceof(events.GhostBecameSpectatorEvent);
+            expect(eventsQueue[0]).to.eql(stub.events.GHOST_BECAME_SPECTATOR(2));
         });
 
-        it('sends a request over network to spectators\' sockets', function () {
-            expect(api.sendSnapshot).to.have.been.calledWith({
-                to: [ stub.constants.SOCKET(2), stub.constants.SOCKET(3) ]
-            }, { snapshot });
+        it('sends to a spectator all information about session', function () {
+            const [p1, p2] = [
+                stub.constants.PARTICIPANT_DETAILS(1),
+                stub.constants.PARTICIPANT_DETAILS(2),
+            ];
+
+            expect(api.sendSession).to.have.been.calledWith({ to: p2.id },
+                {
+                    id: p2.id,
+                    presenterId: p1.id,
+                    participants: {
+                        [p1.id]: p1.email,
+                        [p2.id]: p2.email,
+                    },
+                    snapshot: stub.constants.SNAPSHOT(),
+                }
+            );
+        });
+
+        it('broadcasts to presenter and spectators that they have a new spectator', function () {
+            const { id: spectatorId, email } = stub.constants.PARTICIPANT_DETAILS(2);
+
+            expect(api.announceNewSpectators).to.have.been.calledWith({
+                broadcastTo: stub.constants.SITE(1),
+                except: [stub.constants.SOCKET(2)],
+            }, {
+                [spectatorId]: email,
+            });
         });
     });
 
     describe('when presenter is removed', function () {
         beforeEach(function () {
-            commands.transferPresentership = sinon.spy();
-            commands.removeSpectator = sinon.spy();
+            commands.transferPresentership = () => dispatch(stub.events.PRESENTER_CHANGED(2));
+            commands.disconnectSpectator = sinon.spy();
+            commands.disconnectGhost = sinon.spy();
+            sinon.spy(commands, 'transferPresentership');
             state = reducer(state, stub.events.SESSION_CREATED);
         });
 
         describe('but there is at least one more spectator', function () {
             beforeEach(function () {
-                state = reducer(state, stub.events.SPECTATOR_JOINED(2));
+                state = reducer(state, stub.events.PARTICIPANT_JOINING(2));
+                state = reducer(state, stub.events.GHOST_BECAME_SPECTATOR(2));
 
-                commands.removeParticipant(stub.commands.REMOVE_PARTICIPANT(1));
+                commands.disconnectParticipant(stub.commands.DISCONNECT_PARTICIPANT(1));
             });
 
             it('firstly, transfers presenter rights to a first spectator', function () {
@@ -182,15 +154,17 @@ describe('commands:', () => {
             });
 
             it('secondly, removes a presenter prentending like (s)he was a spectator', function () {
-                expect(commands.removeSpectator).to.have.been.calledWith(
-                    stub.commands.REMOVE_SPECTATOR(1)
+                expect(commands.disconnectSpectator).to.have.been.calledWith(
+                    stub.commands.DISCONNECT_SPECTATOR(1)
                 );
             });
         });
 
-        describe('and there are no spectators left', function () {
+        describe('and there are no spectators, but one ghost', function () {
             beforeEach(function () {
-                commands.removeParticipant(stub.commands.REMOVE_PARTICIPANT(1));
+                commands.disconnectGhost = sinon.spy();
+                state = reducer(state, stub.events.PARTICIPANT_JOINING(2));
+                commands.disconnectParticipant(stub.commands.DISCONNECT_PARTICIPANT(1));
             });
 
             it('marks session as abandoned', function () {
@@ -198,23 +172,24 @@ describe('commands:', () => {
                 expect(eventsQueue[0]).to.be.an.instanceof(events.SessionAbandonedEvent);
                 expect(eventsQueue[0]).to.eql(stub.events.SESSION_ABANDONED());
             });
+
+            it('forcefully disconnects ghost', function () {
+                expect(commands.disconnectGhost).to.have.been.calledWith({
+                    isForce: true,
+                    ghostId: stub.constants.SOCKET(2),
+                });
+            });
         });
     });
 
-    describe('when a regular spectator is removed', function () {
+    describe('when a regular spectator is disconnected', function () {
         beforeEach(function () {
             state = reducer(state, stub.events.SESSION_CREATED);
-            state = reducer(state, stub.events.SPECTATOR_JOINED(2));
+            state = reducer(state, stub.events.PARTICIPANT_JOINING(2));
+            state = reducer(state, stub.events.GHOST_BECAME_SPECTATOR(2));
 
-            commands.removeSpectator(stub.commands.REMOVE_SPECTATOR(2));
+            commands.disconnectSpectator(stub.commands.DISCONNECT_SPECTATOR(2));
         });
-
-        // it('announces a new presenter to others left in a session', function () {
-            // expect(api.announcePresenter).to.have.been.calledWith({
-                // sessionId: stub.constants.SITE(1),
-                // presenter: stub.constants.PARTICIPANT_DETAILS(2),
-            // });
-        // });
 
         it('marks participant as a member who left a session', function () {
             expect(eventsQueue).to.have.length(1);
@@ -223,11 +198,37 @@ describe('commands:', () => {
         });
 
         it('announces its leaving to other members in a session', function () {
-            expect(api.announceExitingSpectators).to.have.been.calledWith({
+            expect(api.announceLeavingSpectator).to.have.been.calledWith({
                 broadcastTo: stub.constants.SITE(1),
                 except: stub.constants.SOCKET(2),
             }, {
-                spectatorIds: [stub.constants.SOCKET(2)],
+                spectatorId: stub.constants.SOCKET(2),
+            });
+        });
+    });
+
+    describe('when a ghost is disconnected', function () {
+        beforeEach(function () {
+            state = reducer(state, stub.events.SESSION_CREATED);
+            state = reducer(state, stub.events.PARTICIPANT_JOINING(2));
+        });
+
+        it('removes a ghost from the session', function () {
+            commands.disconnectGhost(stub.commands.DISCONNECT_GHOST(2, false));
+
+            expect(eventsQueue).to.have.length(1);
+            expect(eventsQueue[0]).to.be.an.instanceof(events.GhostDisconnectedEvent);
+            expect(eventsQueue[0]).to.eql(stub.events.GHOST_DISCONNECTED(2));
+        });
+
+        describe('and it happens because presenter has exited', function () {
+            it('informs the ghost that it is alone without any hope', function () {
+                commands.disconnectGhost(stub.commands.DISCONNECT_GHOST(2, true));
+
+                expect(api.announceLeavingSpectator).to.have.been.calledWith(
+                    { to: stub.constants.SOCKET(2) },
+                    { spectatorId: stub.constants.SOCKET(1) }
+                );
             });
         });
     });
