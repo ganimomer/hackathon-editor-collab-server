@@ -13,7 +13,8 @@ _(protocol version 2)_
 
 ### session :monkey_face: :tropical_fish:
 ```js 
-Object { id, participants: { id:name }, presenterId, snapshot? } // session spectator data and (optionally) state snapshot
+Object { id, participants: { id:name }, presenterId, snapshot? } 
+// session spectator data and (optionally) state snapshot
 ``` 
 
 ### spectator-joined :monkey_face: :tropical_fish:
