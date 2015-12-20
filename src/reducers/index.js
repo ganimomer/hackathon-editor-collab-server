@@ -39,8 +39,14 @@ module.exports = function reducer(state = getInitialState(), event) {
         const { sessionId, spectatorId } = event;
         const session = state.sessions.get(sessionId);
         session.spectators.delete(spectatorId);
-        session.ghosts.delete(spectatorId);
         state.socket2session.delete(spectatorId);
+    }
+
+    if (event instanceof events.GhostDisconnectedEvent) {
+        const { sessionId, participantId } = event;
+        const session = state.sessions.get(sessionId);
+        session.ghosts.delete(participantId);
+        state.socket2session.delete(participantId);
     }
 
     if (event instanceof events.PresenterChangedEvent) {

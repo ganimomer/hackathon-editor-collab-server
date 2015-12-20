@@ -27,12 +27,20 @@ io.on('connection', (socket) => {
     console.log('connected', socket.id)
 
     const api = new NetworkAPI(io, socket, getState);
-    const commands = _.mapValues(require('./commands'), function (fn) {
-        return _.curry(fn)(dispatch, getState, api);
+    const commands = _.mapValues(require('./commands'), function (fn, key) {
+        const curried = _.curry(fn)(dispatch, getState, api);
+
+        return function () {
+            try { return curried.apply(this, arguments); } catch (e) {
+                console.error('shit happened in command', key);
+                console.error(e.stack);
+                console.error(e);
+            }
+        };
     });
 
     socket.on('join', ({ name, siteId }) => {
-        commands.addParticipant({
+        commands.handleJoinRequest({
             sessionId: siteId,
             participant: {
                 id: socket.id,
@@ -83,9 +91,13 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
-        commands.removeParticipant({
+        commands.disconnectParticipant({
             participantId: socket.id,
         });
+    });
+
+    socket.on('error', (err) => {
+        console.error(err);
     });
 });
 

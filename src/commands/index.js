@@ -136,7 +136,7 @@ const commands = {
         if (session.spectators.has(participantId)) {
             this.disconnectSpectator({ spectatorId: participantId });
         } else if (session.ghosts.has(participantId)) {
-            this.disconnectGhost({ spectatorId: participantId });
+            this.disconnectGhost({ ghostId: participantId });
         } else {
             throw 'something weird in disconnection';
         }

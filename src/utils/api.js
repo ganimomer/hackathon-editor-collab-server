@@ -5,7 +5,7 @@ function requestSnapshot(socket) {
 }
 
 function sendSession(socket, { id, presenterId, participants, snapshot }) {
-    socket.emit('session', session);
+    socket.emit('session', { id, presenterId, participants, snapshot });
 }
 
 function announcePresenterChanged(socket, { presenterId }) {
@@ -51,7 +51,11 @@ function resolveSockets(io, socket, state, { to, except, broadcastTo }) {
 }
 
 function wrap(fn) {
+    const fnName = fn.name;
+
     return function routeWrapped(routeInfo, message) {
+        console.log('called network api', fnName);
+
         const { io, socket, getState } = this;
         const state = getState();
         const recipients = resolveSockets(io, socket, state, routeInfo);
