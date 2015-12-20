@@ -2,7 +2,7 @@
 Repo for the websocket server for hackathon
 
 # Message API
-_(protocol version 1)_
+_(protocol version 2)_
 
 ## Glossary
 * **Participant** &mdash; anyone connected to the session
