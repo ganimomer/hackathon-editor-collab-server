@@ -4,21 +4,26 @@ Repo for the websocket server for hackathon
 # Message API 
 _(protocol version 1)_
 
+## Glossary
+* **Participant** &mdash; anyone connected to the session
+* **Presenter** &mdash; a participant currently editing the site
+* **Spectator** &mdash; a participant following the presenter's activity
+
 ## Server → Client
 
 ### session
 ```js 
-Object { [participants], presenterId } // session participants data
+Object { [spectators], presenterId } // session spectator data
 ``` 
 
-### participant-joined
+### spectator-joined
 ```js 
-Object { participantId } // 'participantId' has joined the session
+Object { spectatorId } // 'spectatorId' has joined the session
 ```
 
-### participant-left
+### spectator-left
 ```js 
-Object { participantId } // 'participantId' has left the session
+Object { spectatorId } // 'spectatorId' has left the session
 ```
 
 ### presenter-changed
@@ -28,12 +33,12 @@ Object { presenterId } //  'presenterId' has become the presenter
 
 ### request-snapshot
 ```js 
-Object { participantId } // newly connected participant 'participantId' requests state snapshot
+Object { spectatorId } // newly connected spectator 'spectatorId' requests state snapshot
 ``` 
 
 ### snapshot
 ```js 
-Object { participantId, snapshot } // got state snapshot from the session presenter
+Object { spectatorId, snapshot } // got state snapshot from the session presenter
 ``` 
 
 ### message
@@ -45,12 +50,12 @@ Object message // got a message
 
 ### join
 ```js
-Object { userId, siteId } // user 'userId' joins session 'siteId'
+Object { participantId, siteId } // user 'participantId' joins session 'siteId'
 ```
 
 ### snapshot
 ```js
-Object { participantId } // presenter sends snapshot for `participantId`
+Object { spectatorId } // presenter sends snapshot for 'spectatorId'
 ```
 
 ### message
