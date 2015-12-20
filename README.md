@@ -39,7 +39,7 @@ Object { presenterId } //  'presenterId' has become the presenter
 
 ### request-snapshot :monkey_face:
 ```js 
-Object { spectatorId } // newly connected spectator 'spectatorId' requests state snapshot
+// newly connected spectator requests state snapshot
 ``` 
 
 ### change :tropical_fish:
