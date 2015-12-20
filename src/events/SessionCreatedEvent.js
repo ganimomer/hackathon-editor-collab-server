@@ -1,7 +1,6 @@
-function SessionCreatedEvent({ sessionId, presenterId, presenterInfo }) {
+function SessionCreatedEvent({ sessionId, presenter }) {
     this.sessionId = sessionId;
-    this.presenterId = presenterId;
-    this.presenterInfo = presenterInfo;
+    this.presenter = presenter;
 }
 
 module.exports = SessionCreatedEvent;

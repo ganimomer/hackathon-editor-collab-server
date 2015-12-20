@@ -8,12 +8,38 @@ function AccessDeniedException(command, reason) {
     this.reason = reason;
 }
 
+function UnregisteredIssuerException(issuerId) {
+    this.issuerId = issuerId;
+}
+
+function IssuerIsNotSpectatorException(sessionId, spectatorId) {
+    this.sessionId = sessionId;
+    this.spectatorId = spectatorId;
+}
+
+function EmptySessionException(sessionId) {
+    this.sessionId = sessionId;
+}
+
 function MissingSessionException(sessionId) {
     this.sessionId = sessionId;
 }
 
+function EmptySessionPointerException(issuerId) {
+    this.issuerId = issuerId;
+}
+
+function UnregisteredIssuerException(issuerId) {
+    this.issuerId = issuerId;
+}
+
 module.exports = {
-    AccessDeniedException,
     InvalidCommandException,
+    AccessDeniedException,
+    UnregisteredIssuerException,
+    IssuerIsNotSpectatorException,
+    EmptySessionException,
     MissingSessionException,
+    EmptySessionPointerException,
+    UnregisteredIssuerException,
 };

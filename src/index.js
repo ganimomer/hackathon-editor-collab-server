@@ -10,7 +10,7 @@ app.get('/', function (req, res) {
 });
 
 let state;
-const api = require('./utils/api');
+const NetworkAPI = require('./utils/api');
 const getState = () => state;
 const reducer = require('./reducers/index');
 const dispatch = event => {
@@ -23,66 +23,71 @@ const dispatch = event => {
 
 dispatch({});
 
-const commands = _.mapValues(require('./commands'), function (fn) {
-    return _.curry(fn)(dispatch, getState, api);
-});
-
 io.on('connection', (socket) => {
-  console.log('connected', socket.id)
+    console.log('connected', socket.id)
 
-  socket.on('join', ({ id, userId, siteId }) => {
-      commands.addParticipant({
-          sessionId: siteId,
-          participantId: id,
-          participantInfo: {
-              userId,
-          }
-      });
+    const api = new NetworkAPI(io, socket, getState);
+    const commands = _.mapValues(require('./commands'), function (fn) {
+        return _.curry(fn)(dispatch, getState, api);
+    });
 
-    // sessionManager.addUser(socket.id, data.userId)
+    socket.on('join', ({ name, siteId }) => {
+        commands.addParticipant({
+            sessionId: siteId,
+            participant: {
+                id: socket.id,
+                email: name,
+            },
+        });
+    });
 
-    const editor = sessionManager.getSiteEditor(data.siteId)
-    if (editor) {
-      console.log(`${socket.id} requests history from ${editor}`)
-      io.to(editor).emit('request-history', { id: socket.id, siteId: data.siteId });
-    } else {
-      sessionManager.join(Object.assign(data, { id: socket.id }))
-      socket.join(data.siteId)
-    }
-  })
+    socket.on('snapshot', ({ snapshot }) => {
+        commands.sendSnapshot({
+            issuerId: socket.id,
+            snapshot: snapshot,
+        });
+    });
 
-  socket.on('history', data => {
-    const viewerSocket = io.sockets.connected[data.id]
-    const editor = sessionManager.getSiteEditor(data.siteId)
-    console.log(`${editor} sent history to ${viewerSocket.id}`)
-    viewerSocket.emit('history', data.history);
-    sessionManager.join(data)
-    viewerSocket.join(data.siteId)
-    viewerSocket.broadcast.to(data.siteId).emit('enter', {
-      userId: sessionManager.getUser(data.id),
-      siteId: data.siteId
-    })
-  })
+    socket.on('change', (change) => {
+        commands.broadcastChange({
+            issuerId: socket.id,
+            change,
+        });
+    });
 
-  socket.on('message', data => {
-    // console.log(`message: ${JSON.stringify(data)}`)
-    console.log(`message: from ${socket.id} to `)
-    data.userId = sessionManager.getUser(socket.id)
-    forAllRooms(socket, room => socket.broadcast.to(room).emit('message', data))
-  })
+    socket.on('message', (message) => {
+        commands.broadcastMessage({
+            issuerId: socket.id,
+            message,
+        });
+    });
 
-  socket.on('disconnect', () => {
-    const userId = sessionManager.getUser(socket.id)
-    console.log(`${userId} has disconnected`)
+    socket.on('request-control', () => {
+        commands.requestControl({
+            issuerId: socket.id,
+        });
+    });
 
-    forAllRooms(socket, room => {
-      const newEditor = sessionManager.leaveSite(socket.id, room)
-      if (newEditor) {
-        io.to(room).emit('leave', { userId, newEditor })
-      }
-    })
-  })
-})
+    socket.on('grant-control', ({ spectatorId }) => {
+        commands.transferPresentership({
+            issuerId: socket.id,
+            newPresenterId: spectatorId,
+        });
+    });
+
+    socket.on('deny-control', ({ spectatorId }) => {
+        commands.denyControl({
+            issuerId: socket.id,
+            spectatorId,
+        });
+    });
+
+    socket.on('disconnect', () => {
+        commands.removeParticipant({
+            participantId: socket.id,
+        });
+    });
+});
 
 const PORT = 8080;
 console.log('starting on port', PORT);

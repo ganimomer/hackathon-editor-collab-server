@@ -1,24 +1,42 @@
 const {
-    SITE, SOCKET, PARTICIPANT_INFO, SNAPSHOT
+    SITE, SOCKET, PARTICIPANT_DETAILS, SNAPSHOT
 } = require('./constants');
 
 module.exports = {
     ADD_PARTICIPANT: i => ({
         sessionId: SITE(1),
-        participantId: SOCKET(i),
-        participantInfo: PARTICIPANT_INFO(i),
+        participant: PARTICIPANT_DETAILS(i),
     }),
-    REQUEST_SNAPSHOT: i => ({
-        sessionId: SITE(1),
-        participantId: SOCKET(i),
-    }),
-    SEND_SNAPSHOT: (i) => ({
-        sessionId: SITE(1),
-        presenterId: SOCKET(i),
+    SEND_SNAPSHOT: i => ({
+        issuerId: SOCKET(i),
         snapshot: SNAPSHOT(1, i),
     }),
+    BROADCAST_CHANGE: i => ({
+        issuerId: SOCKET(i),
+        change: 'change from ' + i,
+    }),
+    BROADCAST_MESSAGE: i => ({
+        issuerId: SOCKET(i),
+        change: 'message from ' + i,
+    }),
+    REQUEST_CONTROL: i => ({
+        issuerId: SOCKET(i),
+    }),
+    TRANSFER_PRESENTERSHIP: (i, j) => ({
+        issuerId: SOCKET(i),
+        newPresenterId: SOCKET(j),
+    }),
+    DENY_CONTROL: (i, j) => ({
+        issuerId: SOCKET(i),
+        spectatorId: SOCKET(j),
+    }),
     REMOVE_PARTICIPANT: i => ({
-        sessionId: SITE(1),
         participantId: SOCKET(i),
+    }),
+    REQUEST_SNAPSHOT: i => ({
+        issuerId: SOCKET(i),
+    }),
+    REMOVE_SPECTATOR: i => ({
+        spectatorId: SOCKET(i),
     }),
 };

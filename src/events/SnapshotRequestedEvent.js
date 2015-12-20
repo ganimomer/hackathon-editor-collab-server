@@ -1,6 +1,6 @@
-function SnapshotRequestedEvent({ sessionId, participantId }) {
+function SnapshotRequestedEvent({ sessionId, spectatorId }) {
     this.sessionId = sessionId;
-    this.participantId = participantId;
+    this.spectatorId = spectatorId;
 }
 
 module.exports = SnapshotRequestedEvent;

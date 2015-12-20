@@ -1,30 +1,29 @@
 const events = require('../../src/events');
 const {
-    SITE, SOCKET, PARTICIPANT_INFO
+    SITE, SOCKET, PARTICIPANT_DETAILS,
 } = require('./constants');
 
 module.exports = {
     INITIALIZE: {},
+    SERVER_RESET: () => new events.ServerResetEvent(),
     SESSION_CREATED: new events.SessionCreatedEvent({
         sessionId: SITE(1),
-        presenterId: SOCKET(1),
-        presenterInfo: PARTICIPANT_INFO(1),
+        presenter: PARTICIPANT_DETAILS(1),
     }),
     SESSION_ABANDONED: () => new events.SessionAbandonedEvent({
         sessionId: SITE(1),
     }),
-    PARTICIPANT_JOINED: (i) => new events.ParticipantJoinedEvent({
+    SPECTATOR_JOINED: (i) => new events.SpectatorJoinedEvent({
         sessionId: SITE(1),
-        participantId: SOCKET(i),
-        participantInfo: PARTICIPANT_INFO(i),
+        spectator: PARTICIPANT_DETAILS(i),
     }),
-    PARTICIPANT_LEFT: (i) => new events.ParticipantLeftEvent({
+    SPECTATOR_LEFT: (i) => new events.SpectatorLeftEvent({
         sessionId: SITE(1),
-        participantId: SOCKET(i),
+        spectatorId: SOCKET(i),
     }),
     SNAPSHOT_REQUESTED: i => (new events.SnapshotRequestedEvent({
         sessionId: SITE(1),
-        participantId: SOCKET(i),
+        spectatorId: SOCKET(i),
     })),
     SNAPSHOT_SENT: () => (new events.SnapshotSentEvent({
         sessionId: SITE(1),

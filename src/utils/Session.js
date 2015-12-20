@@ -1,8 +1,7 @@
-function Session ({ sessionId, presenterId }) {
+function Session ({ sessionId, presenter }) {
     this.id = sessionId;
-    this.presenterId = presenterId;
-    this.participants = new Set();
-    this.participants.add(presenterId);
+    this.presenter = presenter;
+    this.spectators = new Map();
     this.waitingSnapshot = new Set();
 };
 

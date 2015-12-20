@@ -1,114 +1,167 @@
 const events = require('../events');
 const exceptions = require('./exceptions');
 
+function getSessionId(socket2session, issuerId) {
+    if (!socket2session.has(issuerId)) {
+        throw new exceptions.UnregisteredIssuerException(issuerId);
+    }
+
+    const sessionId = socket2session.get(issuerId);
+
+    if (!sessionId) {
+        throw new exceptions.EmptySessionPointerException(issuerId);
+    }
+
+    return sessionId;
+}
+
+function getSession(state, issuerId) {
+    const { sessions, socket2session } = state;
+    const sessionId = getSessionId(socket2session, issuerId);
+
+    if (!sessions.has(sessionId)) {
+        throw new exceptions.MissingSessionException(sessionId);
+    }
+
+    const session = sessions.get(sessionId);
+
+    if (!session) {
+        throw new exceptions.EmptySessionException(sessionId);
+    }
+
+    return session;
+}
+
 const commands = {
     requestSnapshot(dispatch, getState, api, command) {
-        const { sessionId, participantId } = command;
+        const { issuerId } = command;
+        const session = getSession(getState(), issuerId);
+
+        if (session.spectators.has(issuerId)) {
+            dispatch(new events.SnapshotRequestedEvent({
+                sessionId: session.id,
+                spectatorId: issuerId
+            }));
+
+            api.requestSnapshot({ to: session.presenter.id });
+        } else {
+           throw new exceptions.IssuerIsNotSpectatorException(session.id, issuerId);
+        }
+    },
+    sendSnapshot(dispatch, getState, api, command) {
+        const { sessionId, issuerId, snapshot } = command;
+        const session = getSession(getState(), issuerId);
+
+        if (issuerId === session.presenter.id) {
+            const spectatorsIds = Array.from(session.waitingSnapshot.values());
+
+            api.sendSnapshot({ to: spectatorsIds }, { snapshot });
+            dispatch(new events.SnapshotSentEvent({ sessionId }));
+        } else {
+            throw new exceptions.AccessDeniedException(command, 'is not a presenter');
+        }
+    },
+    addParticipant(dispatch, getState, api, command) {
+        const { sessionId, participant } = command;
+        if (!sessionId) { return console.error('no session id'); }
+
         const { sessions } = getState();
         const session = sessions.get(sessionId);
 
         if (session) {
-            dispatch(new events.SnapshotRequestedEvent({ sessionId, participantId }));
-            api.requestSnapshot({ presenterId: session.presenterId });
-        } else {
-            throw new exceptions.MissingSessionException(sessionId);
-        }
-    },
-    sendSnapshot(dispatch, getState, api, command) {
-        const { sessionId, presenterId, snapshot } = command;
-        const { sessions } = getState();
-        const session = sessions.get(sessionId);
+            const spectatorsPlusNewbie = Array.from(session.spectators.values()).concat([participant]);
 
-        if (session && presenterId === session.presenterId) {
-            session.waitingSnapshot.forEach(participantId => {
-                api.sendSnapshot({
-                    participantId,
-                    history: command.snapshot
-                });
-            });
-
-            dispatch(new events.SnapshotSentEvent({ sessionId }));
-        } else {
-            throw new exceptions.MissingSessionException(sessionId);
-
-            if (session && presenterId === session.presenterId) {
-                throw new exception.AccessDeniedException(command, 'is not a presenter');
-            }
-        }
-    },
-    addParticipant(dispatch, getState, api, command) {
-        const { sessionId, participantId, participantInfo } = command;
-        if (!sessionId) { return console.error('no session id'); }
-
-        const { sessions } = getState();
-
-        if (sessions.has(sessionId)) {
-            dispatch(new events.ParticipantJoinedEvent({
+            dispatch(new events.SpectatorJoinedEvent({
                 sessionId,
-                participantId,
-                participantInfo,
+                spectator: participant,
             }));
 
-            this.requestSnapshot({ sessionId, participantId });
+            api.announcePresenter({ to: participant.id }, {
+                presenter: session.presenter,
+            });
+
+            api.announceSpectators({ to: participant.id }, {
+                spectators: spectatorsPlusNewbie,
+            });
+
+            api.announceNewSpectators({
+                broadcastTo: sessionId,
+                except: participant.id,
+            }, {
+                spectators: [participant],
+            });
+
+            this.requestSnapshot({ sessionId, spectatorId: participant.id });
         } else {
             dispatch(new events.SessionCreatedEvent({
                 sessionId,
-                presenterId: participantId,
-                presenterInfo: participantInfo,
+                presenter: participant,
             }));
+
+            api.announcePresenter(
+                { to: participant.id },
+                { presenter: participant }
+            );
+
+            api.announceSpectators(
+                { to: participant.id },
+                { spectators: [] }
+            );
         }
     },
     removeParticipant(dispatch, getState, api, command) {
         const { sessionId, participantId } = command;
         const { sessions } = getState();
 
-        if (sessions.has(sessionId)) {
-            const session = sessions.get(sessionId);
-
-            if (session.presenterId === participantId) {
-                let newPresenterId;
-
-                for (let aParticipantId of session.participants) {
-                    if (aParticipantId !== participantId) {
-                        newPresenterId = aParticipantId;
-                        break;
-                    }
-                }
-
-                if (newPresenterId) {
-                    dispatch(new events.PresenterChangedEvent({
-                        sessionId,
-                        newPresenterId,
-                    }));
-
-                    dispatch(new events.ParticipantLeftEvent({
-                        sessionId,
-                        participantId,
-                    }));
-
-                    api.sendSessionRights({
-                        participantId: newPresenterId,
-                        isPresenter: true,
-                    });
-                } else {
-                    dispatch(new events.SessionAbandonedEvent({
-                        sessionId,
-                    }));
-                }
-            } else {
-                dispatch(new events.ParticipantLeftEvent({
-                    sessionId,
-                    participantId,
-                }));
-            }
-        } else {
+        if (!sessions.has(sessionId)) {
             throw new exceptions.MissingSessionException(sessionId);
         }
+
+        const session = sessions.get(sessionId);
+
+        if (session.presenter.id === participantId) {
+            if (session.spectators.size === 0) {
+                return dispatch(new events.SessionAbandonedEvent({
+                    sessionId,
+                })); // NOTE: emergency exit branch
+            } else {
+                let newPresenter = session.spectators.values().next().value;
+
+                this.transferPresentership({
+                    sessionId,
+                    newPresenterId: newPresenter.id,
+                    requesterId: session.presenter.id,
+                });
+            }
+        }
+
+        this.removeSpectator({
+            sessionId,
+            spectatorId: participantId,
+        });
     },
-    broadcastToSpectators(dispatch, getState, api, command) {
+    removeSpectator(dispatch, getState, api, command) {
+        const { sessionId, spectatorId } = command;
+        const { sessions } = getState();
+
+        if (!sessions.has(sessionId)) {
+            throw new exceptions.MissingSessionException(sessionId);
+        }
+
+        api.announceExitingSpectators(
+            { broadcastTo: sessionId, except: spectatorId },
+            { spectatorIds: [spectatorId] }
+        );
+
+        dispatch(new events.SpectatorLeftEvent({
+            sessionId,
+            spectatorId
+        }));
     },
-    transferPresenterRightsTo(dispatch, getState, api, command) {
-    },
+    // broadcastToSpectators(dispatch, getState, api, command) {
+    // },
+    // transferPresentership(dispatch, getState, api, command) {
+    // },
 };
 
 module.exports = commands;
