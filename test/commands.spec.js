@@ -125,7 +125,8 @@ describe('commands:', () => {
                 broadcastTo: stub.constants.SITE(1),
                 except: [stub.constants.SOCKET(2)],
             }, {
-                [spectatorId]: email,
+                spectatorId,
+                name: email,
             });
         });
     });

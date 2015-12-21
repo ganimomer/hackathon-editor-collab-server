@@ -67,10 +67,15 @@ const commands = {
                 }))
             });
 
-            api.announceNewSpectators({
-                broadcastTo: sessionId,
-                except: _.pluck(ghosts, 'id')
-            }, ghostsMap);
+            ghosts.forEach(({ id, email }) => {
+                api.announceNewSpectators({
+                    broadcastTo: sessionId,
+                    except: _.pluck(ghosts, 'id')
+                }, {
+                    spectatorId: id,
+                    name: email,
+                });
+            });
         } else {
             throw new exceptions.AccessDeniedException(issuerId, 'is not a presenter');
         }
