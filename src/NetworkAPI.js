@@ -61,7 +61,7 @@ NetworkAPI.prototype = {
     informControlRequested: buildEmitter('control-requested'),
     informControlDenied: buildEmitter('control-denied'),
     broadcastChange: buildEmitter('change'),
-    broadcastMessage: buildEmitter('message'),
+    broadcastChat: buildEmitter('chat'),
 };
 
 module.exports = NetworkAPI;
