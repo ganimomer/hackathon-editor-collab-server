@@ -82,6 +82,12 @@ io.on('connection', (socket) => {
         });
     });
 
+    socket.on('take-control', () => {
+        commands.takePresentership({
+            issuerId: socket.id,
+        });
+    });
+
     socket.on('grant-control', ({ spectatorId }) => {
         commands.transferPresentership({
             issuerId: socket.id,

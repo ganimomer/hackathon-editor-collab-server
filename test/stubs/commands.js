@@ -22,6 +22,9 @@ module.exports = {
     REQUEST_CONTROL: i => ({
         issuerId: SOCKET(i),
     }),
+    TAKE_PRESENTERSHIP: i => ({
+        issuerId: SOCKET(i),
+    }),
     TRANSFER_PRESENTERSHIP: (i, j) => ({
         issuerId: SOCKET(i),
         newPresenterId: SOCKET(j),

@@ -238,6 +238,48 @@ describe('commands:', () => {
         });
     });
 
+    describe('when presentership is forcibly taken', function () {
+        beforeEach(function () {
+            api.announcePresenterChanged = sinon.spy();
+
+            state = reducer(state, stub.events.SESSION_CREATED);
+            state = reducer(state, stub.events.PARTICIPANT_JOINING(2));
+            state = reducer(state, stub.events.PARTICIPANT_JOINING(3));
+            state = reducer(state, stub.events.GHOST_BECAME_SPECTATOR(2));
+        });
+
+        describe('by presenter', function () {
+            it('throws exception', function () {
+                expect(() => commands.takePresentership(stub.commands.TAKE_PRESENTERSHIP(1)))
+                   .to.throw;
+            });
+        });
+
+        describe('by spectator', function () {
+            beforeEach(() => commands.takePresentership(stub.commands.TAKE_PRESENTERSHIP(2)));
+
+            it('marks spectator as a presenter', function () {
+                expect(eventsQueue).to.have.length(1);
+                expect(eventsQueue[0]).to.be.an.instanceof(events.PresenterChangedEvent);
+                expect(eventsQueue[0]).to.eql(stub.events.PRESENTER_CHANGED(2));
+            });
+
+            it('announces new presenter to everyone in session', function () {
+                expect(api.announcePresenterChanged).to.have.been.calledWith(
+                    { broadcastTo: stub.constants.SITE(1) },
+                    { presenterId: stub.constants.SOCKET(2) }
+                );
+            });
+        });
+
+        describe('by ghost', function () {
+            it('throws exception', function () {
+                expect(() => commands.takePresentership(stub.commands.TAKE_PRESENTERSHIP(3)))
+                   .to.throw;
+            });
+        });
+    });
+
     describe('when presentership is transferred by spectator or to ghost ', function () {
         beforeEach(function () {
             state = reducer(state, stub.events.SESSION_CREATED);

@@ -168,6 +168,23 @@ const commands = {
             throw new exceptions.AccessDeniedException(issuerId, 'is not a presenter');
         }
     },
+    takePresentership(dispatch, getState, api, { issuerId }) {
+        const session = getSession(getState(), issuerId);
+
+        if (session.spectators.has(issuerId)) {
+            dispatch(new events.PresenterChangedEvent({
+                sessionId: session.id,
+                newPresenterId: issuerId,
+            }));
+
+            api.announcePresenterChanged(
+                { broadcastTo: session.id },
+                { presenterId: issuerId }
+            );
+        } else {
+            throw new exceptions.UnknownSpectatorException(issuerId);
+        }
+    },
     disconnectSpectator(dispatch, getState, api, { spectatorId }) {
         const session = getSession(getState(), spectatorId);
 
