@@ -2,7 +2,7 @@
 Repo for the websocket server for hackathon
 
 # Message API
-_(protocol version 3)_
+_(protocol version 4)_
 
 ## Glossary
 * **Participant** &mdash; anyone connected to the session
@@ -83,6 +83,11 @@ Object message // send a chat message to everyone in the session
 ### request-control :tropical_fish:
 ```js 
 // request presenter control
+```
+
+### take-control :tropical_fish:
+```js 
+// unconditionally take presenter control
 ```
 
 ### grant-control :monkey_face:
