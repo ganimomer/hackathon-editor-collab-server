@@ -19,7 +19,7 @@ Object { id, participants: { id:name }, presenterId, snapshot? }
 
 ### spectator-joined :monkey_face: :tropical_fish:
 ```js 
-Object { spectatorId } // 'spectatorId' has joined the session
+Object { spectatorId, name } // 'spectatorId' has joined the session
 ```
 
 ### spectator-left :monkey_face: :tropical_fish:
