@@ -142,7 +142,7 @@ const commands = {
         }
     },
     transferPresentership(dispatch, getState, api, { newPresenterId, issuerId }) {
-        const session = getSession(getState(), spectatorId);
+        const session = getSession(getState(), issuerId);
 
         if (session.presenter.id === issuerId) {
             if (session.spectators.has(newPresenterId)) {
