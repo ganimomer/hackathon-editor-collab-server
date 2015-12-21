@@ -69,8 +69,8 @@ io.on('connection', (socket) => {
         });
     });
 
-    socket.on('message', (message) => {
-        commands.broadcastMessage({
+    socket.on('chat', (message) => {
+        commands.broadcastChat({
             issuerId: socket.id,
             message,
         });

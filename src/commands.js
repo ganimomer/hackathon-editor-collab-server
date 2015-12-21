@@ -206,6 +206,18 @@ const commands = {
             throw new exceptions.AccessDeniedException(issuerId, 'is not a presenter');
         }
     },
+    broadcastChat(dispatch, getState, api, { issuerId, message }) {
+        const session = getSession(getState(), issuerId);
+
+        if (session.presenter.id === issuerId || session.spectators.has(issuerId)) {
+            api.broadcastChat(
+                { broadcastTo: session.id, except: issuerId },
+                { participantId: issuerId, message }
+            );
+        } else {
+            throw new exceptions.AccessDeniedException(issuerId, 'is a ghost');
+        }
+    },
     requestControl(dispatch, getState, api, { issuerId }) {
         const session = getSession(getState(), issuerId);
 
