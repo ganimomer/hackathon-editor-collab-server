@@ -2,82 +2,16 @@
 
 const chai = require('chai');
 const expect = chai.expect;
-const io = require('socket.io-client');
 const co = require('co');
 
-describe('Collaboration Server',function () {
+const Client = require('./client');
 
-    function Client (userId, siteId, snapshotData) {
-      this.options ={
-          transports: ['websocket'],
-          'force new connection': true
-      };
-
-      this.socketURL = 'http://0.0.0.0:8080';
-
-      this.userData = {
-        name: userId,
-        siteId: siteId
-      };
-
-      this.snapshotData = snapshotData || { data: 'woo' };
-    };
-
-    Client.prototype.connect = function () {
-      return new Promise((resolve, reject) => {
-        this.socket = io.connect(this.socketURL, this.options);
-
-        this.socket.on('connect', () => {
-          this.socket.emit('join', this.userData);
-          resolve();
-        });
-
-        this.socket.on('request-snapshot', () => {
-          this.socket.emit('snapshot', { snapshot: this.snapshotData });
-        });
-
-        this.receiveSessionData = () => {
-          return new Promise(resolve => {
-            this.socket.on('session', data => {
-              this.id = data.id;
-              resolve(data);
-            });
-          });
-        };
-
-        this.becomePresenter = () => {
-          return new Promise(resolve => {
-            this.socket.on('presenter-changed', data => {
-              if (data.presenterId === this.id) {
-                resolve(data);
-              }
-            });
-          });
-        };
-
-        this.receiveChange = () => {
-          return new Promise(resolve => {
-            this.socket.on('change', resolve)
-          });
-        };
-
-      });
-    };
-
-    Client.prototype.disconnect = function () {
-      return new Promise(resolve => {
-        resolve(this.socket.disconnect());
-      });
-    };
-
-    Client.prototype.send = function (data) {
-      this.socket.emit('change', data);
-    };
+describe('Collaboration Server', function () {
 
     it('snapshot is requested from the first user when second user joins', function (done) {
-      var siteId = 'Demo' + Math.floor(Math.random() * 100);
-      var presenter = new Client('Leo', siteId);
-      var spectator = new Client('Omer', siteId);
+      const siteId = 'Demo' + Math.floor(Math.random() * 100);
+      const presenter = new Client('Leo', siteId);
+      const spectator = new Client('Omer', siteId);
 
       co(function* () {
         yield presenter.connect();
@@ -88,11 +22,11 @@ describe('Collaboration Server',function () {
       }).then(done);
     });
 
-    it('snapshot is requested from the first user when second user joins', function (done) {
-      var siteId = 'Demo' + Math.floor(Math.random() * 100);
-      var presenter = new Client('Leo', siteId);
-      var spectator = new Client('Omer', siteId);
-      var secondSpectator = new Client('Etai', siteId);
+    it('spectator becomes presenter when presenter leaves', function (done) {
+      const siteId = 'Demo' + Math.floor(Math.random() * 100);
+      const presenter = new Client('Leo', siteId);
+      const spectator = new Client('Omer', siteId);
+      const secondSpectator = new Client('Etai', siteId);
 
       co(function* () {
         yield presenter.connect();
@@ -109,10 +43,10 @@ describe('Collaboration Server',function () {
     });
 
     it('everyone disconnects then a new participant connects', function (done) {
-      var siteId = 'Demo' + Math.floor(Math.random() * 100);
-      var presenter = new Client('Leo', siteId);
-      var spectator = new Client('Omer', siteId);
-      var secondPresenter = new Client('Etai', siteId);
+      const siteId = 'Demo' + Math.floor(Math.random() * 100);
+      const presenter = new Client('Leo', siteId);
+      const spectator = new Client('Omer', siteId);
+      const secondPresenter = new Client('Etai', siteId);
 
       co(function* () {
         yield presenter.connect();
@@ -129,22 +63,118 @@ describe('Collaboration Server',function () {
     });
 
     it('presenter sends a change message to spectators', function (done) {
-      var siteId = 'Demo' + Math.floor(Math.random() * 100);
-      var presenter = new Client('Leo', siteId);
-      var spectator = new Client('Omer', siteId);
-      var secondPresenter = new Client('Etai', siteId);
+      const siteId = 'Demo' + Math.floor(Math.random() * 100);
+      const presenter = new Client('Leo', siteId);
+      const spectator = new Client('Omer', siteId);
+      const secondPresenter = new Client('Etai', siteId);
 
       co(function* () {
         yield presenter.connect();
         yield spectator.connect();
         yield spectator.receiveSessionData();
 
-        var data = { change: 'wooo' };
-        var change = spectator.receiveChange();
+        const data = { change: 'wooo' };
+        const change = spectator.receiveChange();
         presenter.send(data);
-        var message = yield change;
+        const message = yield change;
         expect(message).to.deep.equal(data);
 
       }).then(done);
     });
+
+    it('presenter gets a spectator-joined event', function (done) {
+      const siteId = 'Demo' + Math.floor(Math.random() * 100);
+      const presenter = new Client('Leo', siteId);
+      const spectator = new Client('Omer', siteId);
+      const secondPresenter = new Client('Etai', siteId);
+
+      co(function* () {
+        yield presenter.connect();
+        const spectatorJoined = presenter.receiveSpectatorJoined();
+        yield spectator.connect();
+        yield spectator.receiveSessionData();
+        const spectatorData = yield spectatorJoined;
+
+        expect(spectatorData.spectatorId).to.equal(spectator.id);
+        expect(spectatorData.name).to.equal(spectator.userData.name);
+      }).catch(err => console.log(err)).then(done);
+    });
+
+    it('presenter gets a spectator-left event', function (done) {
+      const siteId = 'Demo' + Math.floor(Math.random() * 100);
+      const presenter = new Client('Leo', siteId);
+      const spectator = new Client('Omer', siteId);
+      const secondPresenter = new Client('Etai', siteId);
+
+      co(function* () {
+        yield presenter.connect();
+        yield spectator.connect();
+        yield spectator.receiveSessionData();
+        const spectatorLeft = presenter.receiveSpectatorLeft();
+        yield spectator.disconnect();
+        const spectatorData = yield spectatorLeft;
+
+        expect(spectatorData.spectatorId).to.equal(spectator.id);
+      }).catch(err => console.log(err)).then(done);
+    });
+
+    it('spectator gets a spectator-left event', function (done) {
+      const siteId = 'Demo' + Math.floor(Math.random() * 100);
+      const presenter = new Client('Leo', siteId);
+      const spectator = new Client('Omer', siteId);
+      const secondSpectator = new Client('Etai', siteId);
+
+      co(function* () {
+        yield presenter.connect();
+        yield spectator.connect();
+        yield secondSpectator.connect();
+        yield spectator.receiveSessionData();
+        const spectatorLeft = secondSpectator.receiveSpectatorLeft();
+        yield spectator.disconnect();
+        const spectatorData = yield spectatorLeft;
+
+        expect(spectatorData.spectatorId).to.equal(spectator.id);
+      }).then(done);
+    });
+
+    it('spectator requests and gets control', function (done) {
+      const siteId = 'Demo' + Math.floor(Math.random() * 100);
+      const presenter = new Client('Leo', siteId);
+      const spectator = new Client('Omer', siteId);
+      const secondSpectator = new Client('Etai', siteId);
+
+      co(function* () {
+        yield presenter.connect();
+        yield spectator.connect();
+        yield spectator.receiveSessionData();
+
+        const controlRequested = presenter.controlRequested();
+        spectator.requestControl();
+        yield controlRequested;
+        const controlGranted = participant.becomePresenter();
+        presenter.grantControl(participant.id);
+        yield controlGranted;
+      }).then(done);
+    });
+
+    it('spectator requests and is denied control', function (done) {
+      const siteId = 'Demo' + Math.floor(Math.random() * 100);
+      const presenter = new Client('Leo', siteId);
+      const spectator = new Client('Omer', siteId);
+      const secondSpectator = new Client('Etai', siteId);
+
+      co(function* () {
+        yield presenter.connect();
+        yield spectator.connect();
+        yield spectator.receiveSessionData();
+
+        const controlRequested = presenter.controlRequested();
+        spectator.requestControl();
+        yield controlRequested;
+        const controlDenied = participant.controlDenied();
+        presenter.denyControl(participant.id);
+        yield controlDenied;
+      }).then(done);
+    });
+
 });
