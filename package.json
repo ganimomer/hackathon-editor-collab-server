@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "mocha --recursive --reporter spec",
-    "start": "node server.js",
+    "test": "mocha --require ./src/polyfill.js --recursive --reporter spec",
+    "start": "node index.js",
     "prod": "node server.js 8081"
   },
   "repository": {
@@ -20,16 +20,18 @@
   "homepage": "https://github.com/ganimomer/hackathon-editor-collab-server#readme",
   "dependencies": {
     "express": "^4.13.3",
+    "lodash": "^3.10.1",
     "socket.io": "^1.3.7"
   },
   "devDependencies": {
+    "babel-core": "^6.3.17",
     "babel-eslint": "^4.1.6",
-    "babel-preset-es2015": "^6.3.13",
-    "babel-register": "^6.3.13",
+    "babel-preset-es2015-node4": "^2.0.2",
     "chai": "^3.4.1",
     "co": "^4.6.0",
     "eslint": "^1.10.3",
     "mocha": "^2.3.4",
+    "sinon": "^1.17.2",
     "socket.io-client": "^1.3.7"
   }
 }
