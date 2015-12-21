@@ -129,6 +129,7 @@ describe('Collaboration Server', function () {
         yield spectator.connect();
         yield secondSpectator.connect();
         yield spectator.receiveSessionData();
+        yield secondSpectator.receiveSessionData();
         const spectatorLeft = secondSpectator.receiveSpectatorLeft();
         yield spectator.disconnect();
         const spectatorData = yield spectatorLeft;
