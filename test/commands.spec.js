@@ -23,6 +23,12 @@ describe('commands:', () => {
     let commands;
     let api;
 
+    const [p1, p2, p3] = [
+        stub.constants.PARTICIPANT_DETAILS(1),
+        stub.constants.PARTICIPANT_DETAILS(2),
+        stub.constants.PARTICIPANT_DETAILS(3),
+    ];
+
     beforeEach(() => {
         eventsQueue = [];
         dispatch = e => {
@@ -101,37 +107,32 @@ describe('commands:', () => {
             expect(eventsQueue[0]).to.eql(stub.events.GHOST_BECAME_SPECTATOR(3));
         });
 
-        it('sends to a spectator all information about session', function () {
-            const [p1, p2, p3] = [
-                stub.constants.PARTICIPANT_DETAILS(1),
-                stub.constants.PARTICIPANT_DETAILS(2),
-                stub.constants.PARTICIPANT_DETAILS(3),
-            ];
-
-            expect(api.sendSession).to.have.been.calledWith({ to: p3.id },
+        it('sends to a newbie all information about session', function () {
+            expect(api.sendSession).to.have.been.calledWith({ to: [p3.id] },
                 {
-                    id: p3.id,
+                    snapshot: stub.constants.SNAPSHOT(),
                     presenterId: p1.id,
                     participants: {
                         [p1.id]: p1.email,
                         [p2.id]: p2.email,
                         [p3.id]: p3.email,
                     },
-                    snapshot: stub.constants.SNAPSHOT(),
                 }
             );
         });
 
-        it('broadcasts to presenter and spectators that they have a new spectator', function () {
-            const { id: spectatorId, email } = stub.constants.PARTICIPANT_DETAILS(3);
-
-            expect(api.announceNewSpectators).to.have.been.calledWith({
-                broadcastTo: stub.constants.SITE(1),
-                except: [stub.constants.SOCKET(3)],
-            }, {
-                spectatorId,
-                name: email,
-            });
+        it('broadcasts to a rest of spectators lightweight info about session (excluding snapshot)', function () {
+            expect(api.sendSession).to.have.been.calledWith(
+                { broadcastTo: stub.constants.SITE(1), except: [p3.id] },
+                {
+                    presenterId: p1.id,
+                    participants: {
+                        [p1.id]: p1.email,
+                        [p2.id]: p2.email,
+                        [p3.id]: p3.email,
+                    },
+                }
+            );
         });
     });
 
@@ -165,31 +166,55 @@ describe('commands:', () => {
             });
         });
 
-        describe('and there are no spectators, but one ghost', function () {
+        describe('and there are no spectators, but two ghosts', function () {
             beforeEach(function () {
-                commands.disconnectGhost = sinon.spy();
+                api.sendSession = sinon.spy();
+                commands.disconnectSpectator = sinon.spy();
+
                 state = reducer(state, stub.events.PARTICIPANT_JOINING(2));
+                state = reducer(state, stub.events.PARTICIPANT_JOINING(3));
+
                 commands.disconnectParticipant(stub.commands.DISCONNECT_PARTICIPANT(1));
             });
 
-            it('marks session as abandoned', function () {
-                expect(eventsQueue).to.have.length(1);
-                expect(eventsQueue[0]).to.be.an.instanceof(events.SessionAbandonedEvent);
-                expect(eventsQueue[0]).to.eql(stub.events.SESSION_ABANDONED());
+            it('makes the ghost #1 a spectator', function () {
+                expect(eventsQueue[0]).to.be.an.instanceof(events.GhostBecameSpectatorEvent);
+                expect(eventsQueue[0]).to.eql(stub.events.GHOST_BECAME_SPECTATOR(2));
             });
 
-            it('forcefully disconnects ghost', function () {
-                expect(commands.disconnectGhost).to.have.been.calledWith({
-                    isForce: true,
-                    ghostId: stub.constants.SOCKET(2),
-                });
+            it('makes the ghost #2 a spectator', function () {
+                expect(eventsQueue[1]).to.be.an.instanceof(events.GhostBecameSpectatorEvent);
+                expect(eventsQueue[1]).to.eql(stub.events.GHOST_BECAME_SPECTATOR(3));
             });
+
+            it('transfers presentership to ghost #1', function () {
+                expect(eventsQueue[2]).to.be.an.instanceof(events.PresenterChangedEvent);
+                expect(eventsQueue[2]).to.eql(stub.events.PRESENTER_CHANGED(2));
+            });
+
+            it('kicks a disconnected presenter (via command)', function () {
+                // NOTE: this is going to be messy, but disconnect spectator will inform the ghosts about all session info
+                expect(commands.disconnectSpectator).to.be.have.been.calledWith({ spectatorId: stub.constants.SOCKET(1) });
+            });
+
+            // it('broadcasts a shallow session info to all ghosts', function () {
+            //     expect(api.sendSession).to.have.been.calledWith(
+            //         { broadcastTo: stub.constants.SITE(1) },
+            //         {
+            //             presenterId: p2,
+            //             participants: {
+            //                 [p2.id]: p2.email,
+            //                 [p3.id]: p3.email,
+            //             },
+            //         }
+            //     );
+            // });
         });
     });
 
     describe('when presentership is transferred', function () {
         beforeEach(function () {
-            api.announcePresenterChanged = sinon.spy();
+            api.sendSession = sinon.spy();
 
             state = reducer(state, stub.events.SESSION_CREATED);
             state = reducer(state, stub.events.PARTICIPANT_JOINING(2));
@@ -215,9 +240,15 @@ describe('commands:', () => {
                 });
 
                 it('announces new presenter to everyone in session', function () {
-                    expect(api.announcePresenterChanged).to.have.been.calledWith(
+                    expect(api.sendSession).to.have.been.calledWith(
                         { broadcastTo: stub.constants.SITE(1) },
-                        { presenterId: stub.constants.SOCKET(2) }
+                        {
+                            presenterId: stub.constants.SOCKET(2),
+                            participants: {
+                                [p1.id]: p1.email,
+                                [p2.id]: p2.email,
+                            },
+                        }
                     );
                 });
             });
@@ -240,7 +271,7 @@ describe('commands:', () => {
 
     describe('when presentership is forcibly taken', function () {
         beforeEach(function () {
-            api.announcePresenterChanged = sinon.spy();
+            api.sendSession = sinon.spy();
 
             state = reducer(state, stub.events.SESSION_CREATED);
             state = reducer(state, stub.events.PARTICIPANT_JOINING(2));
@@ -265,9 +296,15 @@ describe('commands:', () => {
             });
 
             it('announces new presenter to everyone in session', function () {
-                expect(api.announcePresenterChanged).to.have.been.calledWith(
+                expect(api.sendSession).to.have.been.calledWith(
                     { broadcastTo: stub.constants.SITE(1) },
-                    { presenterId: stub.constants.SOCKET(2) }
+                    {
+                        presenterId: stub.constants.SOCKET(2),
+                        participants: {
+                            [p1.id]: p1.email,
+                            [p2.id]: p2.email,
+                        },
+                    }
                 );
             });
         });
@@ -304,22 +341,25 @@ describe('commands:', () => {
             state = reducer(state, stub.events.SESSION_CREATED);
             state = reducer(state, stub.events.PARTICIPANT_JOINING(2));
             state = reducer(state, stub.events.GHOST_BECAME_SPECTATOR(2));
+            state = reducer(state, stub.events.PRESENTER_CHANGED(2));
 
-            commands.disconnectSpectator(stub.commands.DISCONNECT_SPECTATOR(2));
+            commands.disconnectSpectator(stub.commands.DISCONNECT_SPECTATOR(1));
         });
 
         it('marks participant as a member who left a session', function () {
             expect(eventsQueue).to.have.length(1);
             expect(eventsQueue[0]).to.be.an.instanceof(events.SpectatorLeftEvent);
-            expect(eventsQueue[0]).to.eql(stub.events.SPECTATOR_LEFT(2));
+            expect(eventsQueue[0]).to.eql(stub.events.SPECTATOR_LEFT(1));
         });
 
         it('announces its leaving to other members in a session', function () {
-            expect(api.announceLeavingSpectator).to.have.been.calledWith({
+            expect(api.sendSession).to.have.been.calledWith({
                 broadcastTo: stub.constants.SITE(1),
-                except: stub.constants.SOCKET(2),
             }, {
-                spectatorId: stub.constants.SOCKET(2),
+                presenterId: stub.constants.SOCKET(2),
+                participants: {
+                    [p2.id]: p2.email,
+                },
             });
         });
     });
@@ -336,17 +376,6 @@ describe('commands:', () => {
             expect(eventsQueue).to.have.length(1);
             expect(eventsQueue[0]).to.be.an.instanceof(events.GhostDisconnectedEvent);
             expect(eventsQueue[0]).to.eql(stub.events.GHOST_DISCONNECTED(2));
-        });
-
-        describe('and it happens because presenter has exited', function () {
-            it('informs the ghost that it is alone without any hope', function () {
-                commands.disconnectGhost(stub.commands.DISCONNECT_GHOST(2, true));
-
-                expect(api.announceLeavingSpectator).to.have.been.calledWith(
-                    { to: stub.constants.SOCKET(2) },
-                    { spectatorId: stub.constants.SOCKET(1) }
-                );
-            });
         });
     });
 });

@@ -37,46 +37,45 @@ function transformIntoParticipantsMap(acc, { id, email }) {
     acc[id] = email;
 }
 
+function transformSessionIntoClientSession(session, snapshot) {
+    const participants = [session.presenter, ...session.spectators.values()];
+
+    let obj = {
+        presenterId: session.presenter.id,
+        participants: _.transform(participants, transformIntoParticipantsMap, {}),
+    };
+
+    if (snapshot) {
+        obj.snapshot = snapshot;
+    }
+
+    return obj;
+}
+
 const commands = {
     sendSnapshot(dispatch, getState, api, command) {
         const { issuerId, snapshot } = command;
-        const { id: sessionId, presenter, ghosts: _ghosts, spectators: _spectators } = getSession(getState(), issuerId);
+        const session = getSession(getState(), issuerId);
+        const { presenter } = session;
 
         if (issuerId === presenter.id) {
-            const ghosts = Array.from(_ghosts.values());
-            const spectators = Array.from(_spectators.values());
-
-            const ghostsMap = _.transform(ghosts, transformIntoParticipantsMap, {});
-
-            const participantsMap = _.transform(
-                [presenter, ...spectators, ...ghosts],
-                transformIntoParticipantsMap,
-                {}
-            );
-
-            ghosts.forEach(ghost => {
-                api.sendSession({ to: ghost.id }, {
-                    id: ghost.id,
-                    presenterId: presenter.id,
-                    participants: participantsMap,
-                    snapshot,
-                });
-
+            const ghostsIds = _.pluck([...session.ghosts.values()], 'id');
+            ghostsIds.forEach(ghostId => {
                 dispatch(new events.GhostBecameSpectatorEvent({
-                    sessionId: sessionId,
-                    participantId: ghost.id,
+                    sessionId: session.id,
+                    participantId: ghostId,
                 }))
             });
 
-            ghosts.forEach(({ id, email }) => {
-                api.announceNewSpectators({
-                    broadcastTo: sessionId,
-                    except: _.pluck(ghosts, 'id')
-                }, {
-                    spectatorId: id,
-                    name: email,
-                });
-            });
+            api.sendSession(
+                { to: ghostsIds },
+                transformSessionIntoClientSession(session, snapshot)
+            );
+
+            api.sendSession(
+                { broadcastTo: session.id, except: ghostsIds },
+                transformSessionIntoClientSession(session)
+            );
         } else {
             throw new exceptions.AccessDeniedException(issuerId, 'is not a presenter');
         }
@@ -119,23 +118,38 @@ const commands = {
     },
     disconnectParticipant(dispatch, getState, api, { participantId }) {
         const session = getSession(getState(), participantId);
+        const presenterId = session.presenter.id;
 
-        if (session.presenter.id === participantId) {
+        if (presenterId === participantId) {
+            const ghostsIds = [...session.ghosts.keys()];
+
             if (session.spectators.size === 0) {
-                session.ghosts.forEach(({ id }) => {
-                    this.disconnectGhost({ ghostId: id, isForce: true });
-                });
+                if (ghostsIds.length === 0) {
+                    return this.abandonSession({ sessionId: session.id });
+                } else {
+                    ghostsIds.forEach(id => {
+                        dispatch(new events.GhostBecameSpectatorEvent({
+                            sessionId: session.id,
+                            participantId: id,
+                        }));
+                    });
 
-                return dispatch(new events.SessionAbandonedEvent({
-                    sessionId: session.id,
-                })); // NOTE: emergency exit branch
+                    dispatch(new events.PresenterChangedEvent({
+                        sessionId: session.id,
+                        newPresenterId: ghostsIds[0],
+                    }));
+                }
             } else {
                 let newPresenter = session.spectators.values().next().value;
 
                 this.transferPresentership({
                     newPresenterId: newPresenter.id,
-                    issuerId: session.presenter.id,
+                    issuerId: presenterId,
                 });
+
+                if (ghostsIds.length > 0) {
+                    api.requestSnapshot({ to: session.presenter.id });
+                }
             }
         }
 
@@ -145,6 +159,15 @@ const commands = {
             this.disconnectGhost({ ghostId: participantId });
         } else {
             throw 'something weird in disconnection';
+        }
+    },
+    abandonSession(dispatch, getState, api, { sessionId }) {
+        const { sessions } = getState();
+
+        if (sessions.has(sessionId)) {
+            dispatch(new events.SessionAbandonedEvent({ sessionId }));
+        } else {
+            throw new exceptions.MissingSessionException(sessionId);
         }
     },
     transferPresentership(dispatch, getState, api, { newPresenterId, issuerId }) {
@@ -157,9 +180,9 @@ const commands = {
                     newPresenterId: newPresenterId,
                 }));
 
-                api.announcePresenterChanged(
+                api.sendSession(
                     { broadcastTo: session.id },
-                    { presenterId: newPresenterId }
+                    transformSessionIntoClientSession(session)
                 );
             } else {
                 throw new exceptions.UnknownSpectatorException(newPresenterId);
@@ -177,9 +200,9 @@ const commands = {
                 newPresenterId: issuerId,
             }));
 
-            api.announcePresenterChanged(
+            api.sendSession(
                 { broadcastTo: session.id },
-                { presenterId: issuerId }
+                transformSessionIntoClientSession(session)
             );
         } else {
             throw new exceptions.UnknownSpectatorException(issuerId);
@@ -188,24 +211,18 @@ const commands = {
     disconnectSpectator(dispatch, getState, api, { spectatorId }) {
         const session = getSession(getState(), spectatorId);
 
-        api.announceLeavingSpectator(
-            { broadcastTo: session.id, except: spectatorId },
-            { spectatorId }
-        );
-
         dispatch(new events.SpectatorLeftEvent({
             sessionId: session.id,
             spectatorId
         }));
-    },
-    disconnectGhost(dispatch, getState, api, { ghostId, isForce = false }) {
-        const session = getSession(getState(), ghostId);
 
-        if (isForce) {
-            api.announceLeavingSpectator({ to: ghostId }, {
-                spectatorId: session.presenter.id,
-            });
-        }
+        api.sendSession(
+            { broadcastTo: session.id },
+            transformSessionIntoClientSession(session)
+        );
+    },
+    disconnectGhost(dispatch, getState, api, { ghostId }) {
+        const session = getSession(getState(), ghostId);
 
         dispatch(new events.GhostDisconnectedEvent({
             sessionId: session.id,
