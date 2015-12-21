@@ -1,8 +1,8 @@
 'use strict';
 
+require('co-mocha');
 const chai = require('chai');
 const expect = chai.expect;
-const co = require('co');
 
 const Client = require('./client');
 
@@ -21,144 +21,123 @@ describe('Collaboration Server', function () {
       secondPresenter = secondSpectator;
     });
 
-    it('snapshot is requested from the first user when second user joins', function (done) {
-      co(function* () {
-        yield presenter.connect();
-        yield spectator.connect();
-        yield spectator.receiveSessionData();
-        yield spectator.disconnect();
-        yield presenter.disconnect();
-      }).then(done);
+    it('snapshot is requested from the first user when second user joins', function* () {
+      yield presenter.connect();
+      yield spectator.connect();
+      yield spectator.receiveSessionData();
+      yield spectator.disconnect();
+      yield presenter.disconnect();
     });
 
-    it('spectator becomes presenter when presenter leaves', function (done) {
-      co(function* () {
-        yield presenter.connect();
-        yield spectator.connect();
-        yield spectator.receiveSessionData();
-        yield presenter.disconnect();
-        yield spectator.becomePresenter();
+    it('spectator becomes presenter when presenter leaves', function* () {
+      yield presenter.connect();
+      yield spectator.connect();
+      yield spectator.receiveSessionData();
+      yield presenter.disconnect();
+      yield spectator.becomePresenter();
 
-        yield secondSpectator.connect();
-        yield secondSpectator.receiveSessionData();
-        yield spectator.disconnect();
-        yield secondSpectator.disconnect();
-      }).then(done);
+      yield secondSpectator.connect();
+      yield secondSpectator.receiveSessionData();
+      yield spectator.disconnect();
+      yield secondSpectator.disconnect();
     });
 
-    it('everyone disconnects then a new participant connects', function (done) {
-      co(function* () {
-        yield presenter.connect();
-        yield spectator.connect();
-        yield spectator.receiveSessionData();
-        yield presenter.disconnect();
-        yield spectator.disconnect();
+    it('everyone disconnects then a new participant connects', function* () {
+      yield presenter.connect();
+      yield spectator.connect();
+      yield spectator.receiveSessionData();
+      yield presenter.disconnect();
+      yield spectator.disconnect();
 
-        yield secondPresenter.connect();
-        const session = yield secondPresenter.receiveSessionData();
-        expect(session.presenterId).to.equal(secondPresenter.id);
-        yield secondPresenter.disconnect();
-      }).then(done);
+      yield secondPresenter.connect();
+      const session = yield secondPresenter.receiveSessionData();
+      expect(session.presenterId).to.equal(secondPresenter.id);
+      yield secondPresenter.disconnect();
     });
 
-    it('presenter sends a change message to spectators', function (done) {
-      co(function* () {
-        yield presenter.connect();
-        yield spectator.connect();
-        yield spectator.receiveSessionData();
+    it('presenter sends a change message to spectators', function* () {
+      yield presenter.connect();
+      yield spectator.connect();
+      yield spectator.receiveSessionData();
 
-        const data = { change: 'wooo' };
-        const change = spectator.receiveChange();
-        presenter.sendChange(data);
-        const message = yield change;
-        expect(message).to.deep.equal(data);
-
-      }).then(done);
+      const data = { change: 'wooo' };
+      const change = spectator.receiveChange();
+      presenter.sendChange(data);
+      const message = yield change;
+      expect(message).to.deep.equal(data);
     });
 
-    it('presenter gets a spectator-joined event', function (done) {
-      co(function* () {
-        yield presenter.connect();
-        const spectatorJoined = presenter.receiveSpectatorJoined();
-        yield spectator.connect();
-        yield spectator.receiveSessionData();
-        const spectatorData = yield spectatorJoined;
+    it('presenter gets a spectator-joined event', function* () {
+      yield presenter.connect();
+      const spectatorJoined = presenter.receiveSpectatorJoined();
+      yield spectator.connect();
+      yield spectator.receiveSessionData();
+      const spectatorData = yield spectatorJoined;
 
-        expect(spectatorData.spectatorId).to.equal(spectator.id);
-        expect(spectatorData.name).to.equal(spectator.userData.name);
-      }).catch(err => console.log(err)).then(done);
+      expect(spectatorData.spectatorId).to.equal(spectator.id);
+      expect(spectatorData.name).to.equal(spectator.userData.name);
     });
 
-    it('presenter gets a spectator-left event', function (done) {
-      co(function* () {
-        yield presenter.connect();
-        yield spectator.connect();
-        yield spectator.receiveSessionData();
-        const spectatorLeft = presenter.receiveSpectatorLeft();
-        yield spectator.disconnect();
-        const spectatorData = yield spectatorLeft;
+    it('presenter gets a spectator-left event', function* () {
+      yield presenter.connect();
+      yield spectator.connect();
+      yield spectator.receiveSessionData();
+      const spectatorLeft = presenter.receiveSpectatorLeft();
+      yield spectator.disconnect();
+      const spectatorData = yield spectatorLeft;
 
-        expect(spectatorData.spectatorId).to.equal(spectator.id);
-      }).then(done);
+      expect(spectatorData.spectatorId).to.equal(spectator.id);
     });
 
-    it('spectator gets a spectator-left event', function (done) {
-      co(function* () {
-        yield presenter.connect();
-        yield spectator.connect();
-        yield secondSpectator.connect();
-        yield spectator.receiveSessionData();
-        yield secondSpectator.receiveSessionData();
-        const spectatorLeft = secondSpectator.receiveSpectatorLeft();
-        yield spectator.disconnect();
-        const spectatorData = yield spectatorLeft;
+    it('spectator gets a spectator-left event', function* () {
+      yield presenter.connect();
+      yield spectator.connect();
+      yield secondSpectator.connect();
+      yield spectator.receiveSessionData();
+      yield secondSpectator.receiveSessionData();
+      const spectatorLeft = secondSpectator.receiveSpectatorLeft();
+      yield spectator.disconnect();
+      const spectatorData = yield spectatorLeft;
 
-        expect(spectatorData.spectatorId).to.equal(spectator.id);
-      }).then(done);
+      expect(spectatorData.spectatorId).to.equal(spectator.id);
     });
 
-    it('spectator requests and gets control', function (done) {
-      co(function* () {
-        yield presenter.connect();
-        yield spectator.connect();
-        yield spectator.receiveSessionData();
+    it('spectator requests and gets control', function* () {
+      yield presenter.connect();
+      yield spectator.connect();
+      yield spectator.receiveSessionData();
 
-        const controlRequested = presenter.controlRequested();
-        spectator.requestControl();
-        yield controlRequested;
-        const controlGranted = spectator.becomePresenter();
-        presenter.grantControl(spectator.id);
-        yield controlGranted;
-      }).catch(err => console.log(err)).then(done);
+      const controlRequested = presenter.controlRequested();
+      spectator.requestControl();
+      yield controlRequested;
+      const controlGranted = spectator.becomePresenter();
+      presenter.grantControl(spectator.id);
+      yield controlGranted;
     });
 
-    it('spectator requests and is denied control', function (done) {
-      co(function* () {
-        yield presenter.connect();
-        yield spectator.connect();
-        yield spectator.receiveSessionData();
+    it('spectator requests and is denied control', function* () {
+      yield presenter.connect();
+      yield spectator.connect();
+      yield spectator.receiveSessionData();
 
-        const controlRequested = presenter.controlRequested();
-        spectator.requestControl();
-        yield controlRequested;
-        const controlDenied = spectator.controlDenied();
-        presenter.denyControl(spectator.id);
-        yield controlDenied;
-      }).catch(err => console.log(err)).then(done);
+      const controlRequested = presenter.controlRequested();
+      spectator.requestControl();
+      yield controlRequested;
+      const controlDenied = spectator.controlDenied();
+      presenter.denyControl(spectator.id);
+      yield controlDenied;
     });
 
-    it('presenter sends a chat message to spectators', function (done) {
-      co(function* () {
-        yield presenter.connect();
-        yield spectator.connect();
-        yield spectator.receiveSessionData();
+    it('presenter sends a chat message to spectators', function* () {
+      yield presenter.connect();
+      yield spectator.connect();
+      yield spectator.receiveSessionData();
 
-        const message = { data: 'wooo' };
-        const chatMessage = spectator.receiveChatMessage();
-        presenter.sendChatMessage(message);
-        const data = yield chatMessage;
-        expect(data.message).to.deep.equal(message);
-      }).catch(err => console.log(err)).then(done);
+      const message = { data: 'wooo' };
+      const chatMessage = spectator.receiveChatMessage();
+      presenter.sendChatMessage(message);
+      const data = yield chatMessage;
+      expect(data.message).to.deep.equal(message);
     });
 
 });
