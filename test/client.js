@@ -54,6 +54,12 @@ Client.prototype.connect = function () {
       });
     };
 
+    this.receiveChatMessage = () => {
+      return new Promise(resolve => {
+        this.socket.on('chat', resolve);
+      });
+    };
+
     this.receiveSpectatorJoined = () => {
       return new Promise(resolve => {
         this.socket.on('spectator-joined', resolve);
@@ -86,8 +92,12 @@ Client.prototype.disconnect = function () {
   });
 };
 
-Client.prototype.send = function (data) {
+Client.prototype.sendChange = function (data) {
   this.socket.emit('change', data);
+};
+
+Client.prototype.sendChatMessage = function (message) {
+  this.socket.emit('chat', message);
 };
 
 Client.prototype.requestControl = function () {

@@ -75,7 +75,7 @@ describe('Collaboration Server', function () {
 
         const data = { change: 'wooo' };
         const change = spectator.receiveChange();
-        presenter.send(data);
+        presenter.sendChange(data);
         const message = yield change;
         expect(message).to.deep.equal(data);
 
@@ -175,6 +175,26 @@ describe('Collaboration Server', function () {
         presenter.denyControl(spectator.id);
         yield controlDenied;
       }).catch(err => console.log(err)).then(done);
+    });
+
+    it('presenter sends a chat message to spectators', function (done) {
+      const siteId = 'Demo' + Math.floor(Math.random() * 100);
+      const presenter = new Client('Leo', siteId);
+      const spectator = new Client('Omer', siteId);
+      const secondPresenter = new Client('Etai', siteId);
+
+      co(function* () {
+        yield presenter.connect();
+        yield spectator.connect();
+        yield spectator.receiveSessionData();
+
+        const message = { data: 'wooo' };
+        const chatMessage = spectator.receiveChatMessage();
+        presenter.sendChatMessage(message);
+        const data = yield chatMessage;
+        expect(data.message).to.deep.equal(message);
+        expect(message).to.deep.equal(data);
+      }).then(done);
     });
 
 });
