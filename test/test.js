@@ -55,9 +55,9 @@ describe('Collaboration Server',function () {
           });
         };
 
-        this.receiveMessage = () => {
+        this.receiveChange = () => {
           return new Promise(resolve => {
-            this.socket.on('message', resolve)
+            this.socket.on('change', resolve)
           });
         };
 
@@ -71,8 +71,7 @@ describe('Collaboration Server',function () {
     };
 
     Client.prototype.send = function (data) {
-      data.userId = this.userData.userId;
-      this.socket.emit('message', data);
+      this.socket.emit('change', data);
     };
 
     it('snapshot is requested from the first user when second user joins', function (done) {
@@ -129,4 +128,23 @@ describe('Collaboration Server',function () {
       }).then(done);
     });
 
+    it('presenter sends a change message to spectators', function (done) {
+      var siteId = 'Demo' + Math.floor(Math.random() * 100);
+      var presenter = new Client('Leo', siteId);
+      var spectator = new Client('Omer', siteId);
+      var secondPresenter = new Client('Etai', siteId);
+
+      co(function* () {
+        yield presenter.connect();
+        yield spectator.connect();
+        yield spectator.receiveSessionData();
+
+        var data = { change: 'wooo' };
+        var change = spectator.receiveChange();
+        presenter.send(data);
+        var message = yield change;
+        expect(message).to.deep.equal(data);
+
+      }).then(done);
+    });
 });
