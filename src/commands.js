@@ -223,10 +223,7 @@ const commands = {
 
         if (session.presenter.id === issuerId) {
             if (session.spectators.has(spectatorId)) {
-                api.informControlDenied(
-                    { to: session.presenter.id },
-                    { spectatorId }
-                );
+                api.informControlDenied({ to: spectatorId });
             } else {
                 throw new exceptions.UnknownSpectatorException(spectatorId);
             }
