@@ -18,6 +18,29 @@ function Client (userId, siteId, snapshotData) {
 
 Client.prototype.connect = function () {
   return new Promise((resolve, reject) => {
+
+    const promiseFromSocketEvent = (event, method)=> {
+      this[method] = () => {
+        return new Promise(resolve => {
+          this.socket.on(event, resolve);
+        });
+      };
+    }
+
+    const methodByEvent = {
+      'change':            'receiveChange',
+      'chat':              'receiveChatMessage',
+      'spectator-joined':  'receiveSpectatorJoined',
+      'spectator-left':    'receiveSpectatorLeft',
+      'spectator-left':    'receiveSpectatorLeft',
+      'control-requested': 'controlRequested',
+      'control-denied':    'controlDenied'
+    };
+
+    for (var key in methodByEvent) {
+      promiseFromSocketEvent(key, methodByEvent[key]);
+    }
+
     this.socket = io.connect(this.socketURL, this.options);
 
     this.socket.on('connect', () => {
@@ -48,42 +71,8 @@ Client.prototype.connect = function () {
       });
     };
 
-    this.receiveChange = () => {
-      return new Promise(resolve => {
-        this.socket.on('change', resolve);
-      });
-    };
-
-    this.receiveChatMessage = () => {
-      return new Promise(resolve => {
-        this.socket.on('chat', resolve);
-      });
-    };
-
-    this.receiveSpectatorJoined = () => {
-      return new Promise(resolve => {
-        this.socket.on('spectator-joined', resolve);
-      });
-    };
-
-    this.receiveSpectatorLeft = () => {
-      return new Promise(resolve => {
-        this.socket.on('spectator-left', resolve);
-      });
-    };
-
-    this.controlRequested = () => {
-      return new Promise(resolve => {
-        this.socket.on('control-requested', resolve);
-      });
-    };
-
-    this.controlDenied = () => {
-      return new Promise(resolve => {
-        this.socket.on('control-denied', resolve);
-      });
-    };
   });
+
 };
 
 Client.prototype.disconnect = function () {
@@ -102,6 +91,10 @@ Client.prototype.sendChatMessage = function (message) {
 
 Client.prototype.requestControl = function () {
   this.socket.emit('request-control');
+};
+
+Client.prototype.takeControl = function () {
+  this.socket.emit('take-control');
 };
 
 Client.prototype.denyControl = function (spectatorId) {
