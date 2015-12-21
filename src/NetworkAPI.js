@@ -58,6 +58,8 @@ NetworkAPI.prototype = {
     announcePresenterChanged: buildEmitter('presenter-changed'),
     announceNewSpectators: buildEmitter('spectator-joined'),
     announceLeavingSpectator: buildEmitter('spectator-left'),
+    informControlRequested: buildEmitter('control-requested'),
+    informControlDenied: buildEmitter('control-denied'),
     broadcastChange: buildEmitter('change'),
     broadcastMessage: buildEmitter('message'),
 };

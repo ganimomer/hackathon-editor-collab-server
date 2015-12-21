@@ -206,6 +206,34 @@ const commands = {
             throw new exceptions.AccessDeniedException(issuerId, 'is not a presenter');
         }
     },
+    requestControl(dispatch, getState, api, { issuerId }) {
+        const session = getSession(getState(), issuerId);
+
+        if (session.spectators.has(issuerId)) {
+            api.informControlRequested(
+                { to: session.presenter.id },
+                { spectatorId: issuerId }
+            );
+        } else {
+            throw new exceptions.UnknownSpectatorException(issuerId);
+        }
+    },
+    denyControl(dispatch, getState, api, { issuerId, spectatorId }) {
+        const session = getSession(getState(), issuerId);
+
+        if (session.presenter.id === issuerId) {
+            if (session.spectators.has(spectatorId)) {
+                api.informControlDenied(
+                    { to: session.presenter.id },
+                    { spectatorId }
+                );
+            } else {
+                throw new exceptions.UnknownSpectatorException(spectatorId);
+            }
+        } else {
+            throw new exceptions.AccessDeniedException(issuerId, 'is not a presenter');
+        }
+    },
 };
 
 module.exports = commands;
