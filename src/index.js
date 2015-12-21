@@ -10,28 +10,34 @@ app.get('/', function (req, res) {
 });
 
 let state;
-const NetworkAPI = require('./utils/api');
+const NetworkAPI = require('./NetworkAPI');
+const logger = require('./logger');
 const getState = () => state;
-const reducer = require('./reducers/index');
+const reducer = require('./reducers');
 const dispatch = event => {
-    console.log('dispatching event', event.constructor.name, JSON.stringify(event));
+    logger.logEvent(event);
+    logger.logStateBefore(state);
     state = reducer(state, event);
-    console.log('state became');
-    console.dir(state);
+    logger.logStateAfter(state);
     return state;
 };
 
 dispatch({});
 
 io.on('connection', (socket) => {
+    logger.spacer();
     console.log('connected', socket.id)
 
     const api = new NetworkAPI(io, socket, getState);
     const commands = _.mapValues(require('./commands'), function (fn, key) {
+        const commandName = fn.name;
         const curried = _.curry(fn)(dispatch, getState, api);
 
-        return function () {
-            try { return curried.apply(this, arguments); } catch (e) {
+        return function commandShitCatcher() {
+            try {
+                logger.logCommand(commandName, arguments);
+                return curried.apply(this, arguments);
+            } catch (e) {
                 console.error('shit happened in command', key);
                 console.error(e.stack);
                 console.error(e);
@@ -102,5 +108,6 @@ io.on('connection', (socket) => {
 });
 
 const PORT = 8080;
+logger.spacer();
 console.log('starting on port', PORT);
 http.listen(parseInt(PORT, 10));

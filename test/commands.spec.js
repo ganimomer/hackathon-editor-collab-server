@@ -6,9 +6,9 @@ const sinonChai = require("sinon-chai");
 chai.use(sinonChai);
 
 const events = require('../src/events');
-const reducer = require('../src/reducers/index');
+const reducer = require('../src/reducers');
 const commandsModule = require('../src/commands');
-const apiProto = require('../src/utils/api').prototype;
+const apiProto = require('../src/NetworkAPI').prototype;
 
 const stub = {
     constants: require('./stubs/constants'),

@@ -1,5 +1,5 @@
 const _ = require('lodash');
-const events = require('../events');
+const events = require('./events');
 const exceptions = require('./exceptions');
 
 function getSessionId(socket2session, issuerId) {
