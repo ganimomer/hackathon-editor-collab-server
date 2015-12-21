@@ -52,9 +52,9 @@ Object { spectatorId } //  spectator 'spectatorId' requested control
 Object change // got a change from the presenter
 ```
 
-### message :monkey_face: :tropical_fish:
+### chat :monkey_face: :tropical_fish:
 ```js 
-Object { participantId, message } // got a message
+Object { participantId, message } // got a chat message
 ```
 
 
@@ -75,9 +75,9 @@ Object { snapshot } // presenter sends snapshot
 Object change // send a change to spectators
 ```
 
-### message :monkey_face: :tropical_fish:
+### chat :monkey_face: :tropical_fish:
 ```js 
-Object message // send a message to everyone in the session
+Object message // send a chat message to everyone in the session
 ```
 
 ### request-control :tropical_fish:
