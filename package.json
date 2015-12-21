@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "mocha --require ./src/polyfill.js --recursive --reporter spec",
+    "flow-test": "mocha --recursive --reporter spec ./test/test",
     "start": "node index.js",
     "prod": "node server.js 8081"
   },

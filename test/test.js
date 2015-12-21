@@ -6,7 +6,7 @@ const co = require('co');
 
 describe('Collaboration Server',function () {
 
-    function Client (userId, siteId, historyData) {
+    function Client (userId, siteId, snapshotData) {
       this.options ={
           transports: ['websocket'],
           'force new connection': true
@@ -15,11 +15,11 @@ describe('Collaboration Server',function () {
       this.socketURL = 'http://0.0.0.0:8080';
 
       this.userData = {
-        userId: userId,
+        name: userId,
         siteId: siteId
       };
 
-      this.historyData = historyData;
+      this.snapshotData = snapshotData || { data: 'woo' };
     };
 
     Client.prototype.connect = function () {
@@ -31,22 +31,22 @@ describe('Collaboration Server',function () {
           resolve();
         });
 
-        this.socket.on('request-history', request => {
-          request.history = this.historyData;
-          this.socket.emit('history', request);
+        this.socket.on('request-snapshot', () => {
+          this.socket.emit('snapshot', { snapshot: this.snapshotData });
         });
 
-        this.receiveHistory = () => {
+        this.receiveSessionData = data => {
+          this.id = data.id;
           return new Promise(resolve => {
-            this.socket.on('history', resolve);
+            this.socket.on('session', () => resolve(data));
           });
         };
 
         this.becomePresenter = () => {
           return new Promise(resolve => {
-            this.socket.on('leave', data => {
-              console.log('leave', data);
-              if (data.newEditor === this.userData.userId) {
+            this.socket.on('presenter-changed', data => {
+              console.log('presenter-changed', data);
+              if (data.presenterId === this.id) {
                 resolve(data);
               }
             });
@@ -73,7 +73,7 @@ describe('Collaboration Server',function () {
       this.socket.emit('message', data);
     };
 
-    it('history is requested from the first user when second user joins', function (done) {
+    it('snapshot is requested from the first user when second user joins', function (done) {
       var siteId = 'Demo' + Math.floor(Math.random() * 100);
       var presenter = new Client('Leo', siteId);
       var participant = new Client('Omer', siteId);
@@ -81,16 +81,13 @@ describe('Collaboration Server',function () {
       co(function* () {
         yield presenter.connect();
         yield participant.connect();
-        yield participant.receiveHistory();
-        var message = participant.receiveMessage();
-        presenter.send({ value: 'woooo' });
-        yield message;
-        // yield participant.disconnect();
-        // yield presenter.disconnect();
+        yield participant.receiveSessionData();
+        yield participant.disconnect();
+        yield presenter.disconnect();
       }).then(done);
     });
 
-    it.skip('history is requested from the first user when second user joins', function (done) {
+    it.skip('snapshot is requested from the first user when second user joins', function (done) {
       var siteId = 'Demo' + Math.floor(Math.random() * 100);
       var presenter = new Client('Leo', siteId);
       var participant = new Client('Omer', siteId);
@@ -99,14 +96,14 @@ describe('Collaboration Server',function () {
       co(function* () {
         yield presenter.connect();
         yield participant.connect();
-        yield participant.receiveHistory();
+        yield participant.receiveSessionData();
         yield presenter.disconnect();
-        yield participant.becomePresenter;
+        yield participant.becomePresenter();
 
         yield secondParticipant.connect();
-        yield secondParticipant.receiveHistory;
-        // yield participant.disconnect();
-        // yield secondParticipant.disconnect();
+        yield secondParticipant.receiveSessionData();
+        yield participant.disconnect();
+        yield secondParticipant.disconnect();
       }).then(done);
     });
 
