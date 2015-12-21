@@ -2,7 +2,7 @@
 Repo for the websocket server for hackathon
 
 # Message API
-_(protocol version 2)_
+_(protocol version 3)_
 
 ## Glossary
 * **Participant** &mdash; anyone connected to the session
@@ -30,6 +30,11 @@ Object { spectatorId } // 'spectatorId' has left the session
 ### presenter-changed :monkey_face: :tropical_fish:
 ```js 
 Object { presenterId } //  'presenterId' has become the presenter
+```
+
+### control-requested :monkey_face:
+```js 
+Object { spectatorId } //  spectator 'spectatorId' requested control
 ```
 
 ### control-denied :tropical_fish:
