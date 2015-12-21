@@ -17,11 +17,12 @@ function resolveSockets(state, { to, except, broadcastTo }) {
         recipients = _.isArray(to) ? to : [to];
     } else {
         const { presenter, spectators } = state.sessions.get(broadcastTo);
-        recipients = _.pluck([presenter, ...spectators], 'id');
+        recipients = _.pluck(Array.from(spectators.values()).concat([presenter]), 'id');
     }
 
     if (except) {
-        recipients = _.without(recipients, _.isArray(except) ? except : [except]);
+        except = _.isArray(except) ? except : [except]
+        recipients = _.without(recipients, ...except);
     }
 
     return recipients;
@@ -36,6 +37,9 @@ function buildEmitter(eventName) {
         const recipients = resolveSockets(state, routeInfo);
         const sockets = recipients.map(id => io.to(id));
 
+        if (_.indexOf(recipients, undefined) >= 0) {
+            console.log('some shit, bro');
+        }
         sockets.forEach(socket => socket.emit(eventName, message));
         recipients.forEach(id => logger.logSocket(id));
         logger.spacer();
