@@ -115,6 +115,17 @@ describe('Collaboration Server', function () {
       yield controlGranted;
     });
 
+    it('spectator takes and gets control', function* () {
+      yield presenter.connect();
+      yield spectator.connect();
+      yield spectator.receiveSessionData();
+
+      spectator.takeControl();
+      const controlGranted = spectator.becomePresenter();
+      presenter.grantControl(spectator.id);
+      yield controlGranted;
+    });
+
     it('spectator requests and is denied control', function* () {
       yield presenter.connect();
       yield spectator.connect();
