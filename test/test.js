@@ -1,6 +1,7 @@
 'use strict';
 
 const chai = require('chai');
+const expect = chai.expect;
 const io = require('socket.io-client');
 const co = require('co');
 
@@ -77,13 +78,13 @@ describe('Collaboration Server',function () {
     it('snapshot is requested from the first user when second user joins', function (done) {
       var siteId = 'Demo' + Math.floor(Math.random() * 100);
       var presenter = new Client('Leo', siteId);
-      var participant = new Client('Omer', siteId);
+      var spectator = new Client('Omer', siteId);
 
       co(function* () {
         yield presenter.connect();
-        yield participant.connect();
-        yield participant.receiveSessionData();
-        yield participant.disconnect();
+        yield spectator.connect();
+        yield spectator.receiveSessionData();
+        yield spectator.disconnect();
         yield presenter.disconnect();
       }).then(done);
     });
@@ -91,20 +92,40 @@ describe('Collaboration Server',function () {
     it('snapshot is requested from the first user when second user joins', function (done) {
       var siteId = 'Demo' + Math.floor(Math.random() * 100);
       var presenter = new Client('Leo', siteId);
-      var participant = new Client('Omer', siteId);
-      var secondParticipant = new Client('Etai', siteId);
+      var spectator = new Client('Omer', siteId);
+      var secondSpectator = new Client('Etai', siteId);
 
       co(function* () {
         yield presenter.connect();
-        yield participant.connect();
-        yield participant.receiveSessionData();
+        yield spectator.connect();
+        yield spectator.receiveSessionData();
         yield presenter.disconnect();
-        yield participant.becomePresenter();
+        yield spectator.becomePresenter();
 
-        yield secondParticipant.connect();
-        yield secondParticipant.receiveSessionData();
-        yield participant.disconnect();
-        yield secondParticipant.disconnect();
+        yield secondSpectator.connect();
+        yield secondSpectator.receiveSessionData();
+        yield spectator.disconnect();
+        yield secondSpectator.disconnect();
+      }).then(done);
+    });
+
+    it('everyone disconnects then a new participant connects', function (done) {
+      var siteId = 'Demo' + Math.floor(Math.random() * 100);
+      var presenter = new Client('Leo', siteId);
+      var spectator = new Client('Omer', siteId);
+      var secondPresenter = new Client('Etai', siteId);
+
+      co(function* () {
+        yield presenter.connect();
+        yield spectator.connect();
+        yield spectator.receiveSessionData();
+        yield presenter.disconnect();
+        yield spectator.disconnect();
+
+        yield secondPresenter.connect();
+        const session = yield secondPresenter.receiveSessionData();
+        expect(session.presenterId).to.equal(secondPresenter.id);
+        yield secondPresenter.disconnect();
       }).then(done);
     });
 
