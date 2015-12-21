@@ -115,7 +115,7 @@ describe('Collaboration Server', function () {
         const spectatorData = yield spectatorLeft;
 
         expect(spectatorData.spectatorId).to.equal(spectator.id);
-      }).catch(err => console.log(err)).then(done);
+      }).then(done);
     });
 
     it('spectator gets a spectator-left event', function (done) {
@@ -151,10 +151,10 @@ describe('Collaboration Server', function () {
         const controlRequested = presenter.controlRequested();
         spectator.requestControl();
         yield controlRequested;
-        const controlGranted = participant.becomePresenter();
-        presenter.grantControl(participant.id);
+        const controlGranted = spectator.becomePresenter();
+        presenter.grantControl(spectator.id);
         yield controlGranted;
-      }).then(done);
+      }).catch(err => console.log(err)).then(done);
     });
 
     it('spectator requests and is denied control', function (done) {
@@ -171,10 +171,10 @@ describe('Collaboration Server', function () {
         const controlRequested = presenter.controlRequested();
         spectator.requestControl();
         yield controlRequested;
-        const controlDenied = participant.controlDenied();
-        presenter.denyControl(participant.id);
+        const controlDenied = spectator.controlDenied();
+        presenter.denyControl(spectator.id);
         yield controlDenied;
-      }).then(done);
+      }).catch(err => console.log(err)).then(done);
     });
 
 });
