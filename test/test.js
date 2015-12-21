@@ -35,17 +35,18 @@ describe('Collaboration Server',function () {
           this.socket.emit('snapshot', { snapshot: this.snapshotData });
         });
 
-        this.receiveSessionData = data => {
-          this.id = data.id;
+        this.receiveSessionData = () => {
           return new Promise(resolve => {
-            this.socket.on('session', () => resolve(data));
+            this.socket.on('session', data => {
+              this.id = data.id;
+              resolve(data);
+            });
           });
         };
 
         this.becomePresenter = () => {
           return new Promise(resolve => {
             this.socket.on('presenter-changed', data => {
-              console.log('presenter-changed', data);
               if (data.presenterId === this.id) {
                 resolve(data);
               }
@@ -87,7 +88,7 @@ describe('Collaboration Server',function () {
       }).then(done);
     });
 
-    it.skip('snapshot is requested from the first user when second user joins', function (done) {
+    it('snapshot is requested from the first user when second user joins', function (done) {
       var siteId = 'Demo' + Math.floor(Math.random() * 100);
       var presenter = new Client('Leo', siteId);
       var participant = new Client('Omer', siteId);
