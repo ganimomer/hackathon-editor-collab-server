@@ -8,11 +8,20 @@ const Client = require('./client');
 
 describe('Collaboration Server', function () {
 
-    it('snapshot is requested from the first user when second user joins', function (done) {
-      const siteId = 'Demo' + Math.floor(Math.random() * 100);
-      const presenter = new Client('Leo', siteId);
-      const spectator = new Client('Omer', siteId);
+    var presenter;
+    var spectator;
+    var secondSpectator;
+    var secondPresenter;
 
+    beforeEach(function () {
+      const siteId = 'Demo' + Math.floor(Math.random() * 1000000);
+      presenter = new Client('Leo', siteId);
+      spectator = new Client('Omer', siteId);
+      secondSpectator = new Client('Etai', siteId);
+      secondPresenter = secondSpectator;
+    });
+
+    it('snapshot is requested from the first user when second user joins', function (done) {
       co(function* () {
         yield presenter.connect();
         yield spectator.connect();
@@ -23,11 +32,6 @@ describe('Collaboration Server', function () {
     });
 
     it('spectator becomes presenter when presenter leaves', function (done) {
-      const siteId = 'Demo' + Math.floor(Math.random() * 100);
-      const presenter = new Client('Leo', siteId);
-      const spectator = new Client('Omer', siteId);
-      const secondSpectator = new Client('Etai', siteId);
-
       co(function* () {
         yield presenter.connect();
         yield spectator.connect();
@@ -43,11 +47,6 @@ describe('Collaboration Server', function () {
     });
 
     it('everyone disconnects then a new participant connects', function (done) {
-      const siteId = 'Demo' + Math.floor(Math.random() * 100);
-      const presenter = new Client('Leo', siteId);
-      const spectator = new Client('Omer', siteId);
-      const secondPresenter = new Client('Etai', siteId);
-
       co(function* () {
         yield presenter.connect();
         yield spectator.connect();
@@ -63,11 +62,6 @@ describe('Collaboration Server', function () {
     });
 
     it('presenter sends a change message to spectators', function (done) {
-      const siteId = 'Demo' + Math.floor(Math.random() * 100);
-      const presenter = new Client('Leo', siteId);
-      const spectator = new Client('Omer', siteId);
-      const secondPresenter = new Client('Etai', siteId);
-
       co(function* () {
         yield presenter.connect();
         yield spectator.connect();
@@ -83,11 +77,6 @@ describe('Collaboration Server', function () {
     });
 
     it('presenter gets a spectator-joined event', function (done) {
-      const siteId = 'Demo' + Math.floor(Math.random() * 100);
-      const presenter = new Client('Leo', siteId);
-      const spectator = new Client('Omer', siteId);
-      const secondPresenter = new Client('Etai', siteId);
-
       co(function* () {
         yield presenter.connect();
         const spectatorJoined = presenter.receiveSpectatorJoined();
@@ -101,11 +90,6 @@ describe('Collaboration Server', function () {
     });
 
     it('presenter gets a spectator-left event', function (done) {
-      const siteId = 'Demo' + Math.floor(Math.random() * 100);
-      const presenter = new Client('Leo', siteId);
-      const spectator = new Client('Omer', siteId);
-      const secondPresenter = new Client('Etai', siteId);
-
       co(function* () {
         yield presenter.connect();
         yield spectator.connect();
@@ -119,11 +103,6 @@ describe('Collaboration Server', function () {
     });
 
     it('spectator gets a spectator-left event', function (done) {
-      const siteId = 'Demo' + Math.floor(Math.random() * 100);
-      const presenter = new Client('Leo', siteId);
-      const spectator = new Client('Omer', siteId);
-      const secondSpectator = new Client('Etai', siteId);
-
       co(function* () {
         yield presenter.connect();
         yield spectator.connect();
@@ -139,11 +118,6 @@ describe('Collaboration Server', function () {
     });
 
     it('spectator requests and gets control', function (done) {
-      const siteId = 'Demo' + Math.floor(Math.random() * 100);
-      const presenter = new Client('Leo', siteId);
-      const spectator = new Client('Omer', siteId);
-      const secondSpectator = new Client('Etai', siteId);
-
       co(function* () {
         yield presenter.connect();
         yield spectator.connect();
@@ -159,11 +133,6 @@ describe('Collaboration Server', function () {
     });
 
     it('spectator requests and is denied control', function (done) {
-      const siteId = 'Demo' + Math.floor(Math.random() * 100);
-      const presenter = new Client('Leo', siteId);
-      const spectator = new Client('Omer', siteId);
-      const secondSpectator = new Client('Etai', siteId);
-
       co(function* () {
         yield presenter.connect();
         yield spectator.connect();
@@ -179,11 +148,6 @@ describe('Collaboration Server', function () {
     });
 
     it('presenter sends a chat message to spectators', function (done) {
-      const siteId = 'Demo' + Math.floor(Math.random() * 100);
-      const presenter = new Client('Leo', siteId);
-      const spectator = new Client('Omer', siteId);
-      const secondPresenter = new Client('Etai', siteId);
-
       co(function* () {
         yield presenter.connect();
         yield spectator.connect();
