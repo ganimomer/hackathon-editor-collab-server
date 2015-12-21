@@ -89,6 +89,8 @@ describe('commands:', () => {
         beforeEach(function () {
             state = reducer(state, stub.events.SESSION_CREATED);
             state = reducer(state, stub.events.PARTICIPANT_JOINING(2));
+            state = reducer(state, stub.events.GHOST_BECAME_SPECTATOR(2));
+            state = reducer(state, stub.events.PARTICIPANT_JOINING(3));
 
             commands.sendSnapshot(stub.commands.SEND_SNAPSHOT(1));
         });
@@ -96,22 +98,24 @@ describe('commands:', () => {
         it('transforms a ghost into a spectator', function () {
             expect(eventsQueue).to.have.length(1);
             expect(eventsQueue[0]).to.be.an.instanceof(events.GhostBecameSpectatorEvent);
-            expect(eventsQueue[0]).to.eql(stub.events.GHOST_BECAME_SPECTATOR(2));
+            expect(eventsQueue[0]).to.eql(stub.events.GHOST_BECAME_SPECTATOR(3));
         });
 
         it('sends to a spectator all information about session', function () {
-            const [p1, p2] = [
+            const [p1, p2, p3] = [
                 stub.constants.PARTICIPANT_DETAILS(1),
                 stub.constants.PARTICIPANT_DETAILS(2),
+                stub.constants.PARTICIPANT_DETAILS(3),
             ];
 
-            expect(api.sendSession).to.have.been.calledWith({ to: p2.id },
+            expect(api.sendSession).to.have.been.calledWith({ to: p3.id },
                 {
-                    id: p2.id,
+                    id: p3.id,
                     presenterId: p1.id,
                     participants: {
                         [p1.id]: p1.email,
                         [p2.id]: p2.email,
+                        [p3.id]: p3.email,
                     },
                     snapshot: stub.constants.SNAPSHOT(),
                 }
@@ -119,11 +123,11 @@ describe('commands:', () => {
         });
 
         it('broadcasts to presenter and spectators that they have a new spectator', function () {
-            const { id: spectatorId, email } = stub.constants.PARTICIPANT_DETAILS(2);
+            const { id: spectatorId, email } = stub.constants.PARTICIPANT_DETAILS(3);
 
             expect(api.announceNewSpectators).to.have.been.calledWith({
                 broadcastTo: stub.constants.SITE(1),
-                except: [stub.constants.SOCKET(2)],
+                except: [stub.constants.SOCKET(3)],
             }, {
                 spectatorId,
                 name: email,

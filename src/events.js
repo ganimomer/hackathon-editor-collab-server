@@ -5,9 +5,8 @@ function SessionCreatedEvent({ sessionId, presenter }) {
     this.presenter = presenter;
 }
 
-function SessionAbandonedEvent({ sessionId, presenterId }) {
+function SessionAbandonedEvent({ sessionId }) {
     this.sessionId = sessionId;
-    this.presenterId = presenterId;
 }
 
 function ParticipantJoiningEvent({ sessionId, participant }) {

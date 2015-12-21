@@ -40,10 +40,11 @@ function transformIntoParticipantsMap(acc, { id, email }) {
 const commands = {
     sendSnapshot(dispatch, getState, api, command) {
         const { issuerId, snapshot } = command;
-        const { id: sessionId, presenter, ghosts: _ghosts, spectators } = getSession(getState(), issuerId);
+        const { id: sessionId, presenter, ghosts: _ghosts, spectators: _spectators } = getSession(getState(), issuerId);
 
         if (issuerId === presenter.id) {
             const ghosts = Array.from(_ghosts.values());
+            const spectators = Array.from(_spectators.values());
 
             const ghostsMap = _.transform(ghosts, transformIntoParticipantsMap, {});
 
