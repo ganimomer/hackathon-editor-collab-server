@@ -42,7 +42,7 @@ describe('Collaboration Server', function () {
       yield secondSpectator.disconnect();
     });
 
-    it('everyone disconnects then a new participant connects', function* () {
+    it.only('everyone disconnects then a new participant connects', function* () {
       yield presenter.connect();
       yield spectator.connect();
       yield spectator.receiveSessionData();
@@ -69,7 +69,7 @@ describe('Collaboration Server', function () {
 
     it('presenter gets a spectator-joined event', function* () {
       yield presenter.connect();
-      const spectatorJoined = presenter.receiveSpectatorJoined();
+      const spectatorJoined = presenter.receiveSessionData();
       yield spectator.connect();
       yield spectator.receiveSessionData();
       const spectatorData = yield spectatorJoined;

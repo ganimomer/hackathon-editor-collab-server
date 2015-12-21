@@ -32,7 +32,6 @@ Client.prototype.connect = function () {
       'chat':              'receiveChatMessage',
       'spectator-joined':  'receiveSpectatorJoined',
       'spectator-left':    'receiveSpectatorLeft',
-      'spectator-left':    'receiveSpectatorLeft',
       'control-requested': 'controlRequested',
       'control-denied':    'controlDenied'
     };
@@ -44,6 +43,7 @@ Client.prototype.connect = function () {
     this.socket = io.connect(this.socketURL, this.options);
 
     this.socket.on('connect', () => {
+      this.id = this.socket.id;
       this.socket.emit('join', this.userData);
       resolve();
     });
@@ -55,7 +55,6 @@ Client.prototype.connect = function () {
     this.receiveSessionData = () => {
       return new Promise(resolve => {
         this.socket.on('session', data => {
-          this.id = data.id;
           resolve(data);
         });
       });
@@ -63,7 +62,7 @@ Client.prototype.connect = function () {
 
     this.becomePresenter = () => {
       return new Promise(resolve => {
-        this.socket.on('presenter-changed', data => {
+        this.socket.on('session', data => {
           if (data.presenterId === this.id) {
             resolve(data);
           }
