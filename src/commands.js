@@ -142,13 +142,13 @@ const commands = {
             } else {
                 let newPresenter = session.spectators.values().next().value;
 
-                this.transferPresentership({
+                dispatch(new events.PresenterChangedEvent({
+                    sessionId: session.id,
                     newPresenterId: newPresenter.id,
-                    issuerId: presenterId,
-                });
+                }));
 
                 if (ghostsIds.length > 0) {
-                    api.requestSnapshot({ to: session.presenter.id });
+                    api.requestSnapshot({ to: newPresenter.id });
                 }
             }
         }

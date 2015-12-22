@@ -138,7 +138,6 @@ describe('commands:', () => {
 
     describe('when presenter is removed', function () {
         beforeEach(function () {
-            commands.transferPresentership = () => dispatch(stub.events.PRESENTER_CHANGED(2));
             commands.disconnectSpectator = sinon.spy();
             commands.disconnectGhost = sinon.spy();
             sinon.spy(commands, 'transferPresentership');
@@ -153,10 +152,10 @@ describe('commands:', () => {
                 commands.disconnectParticipant(stub.commands.DISCONNECT_PARTICIPANT(1));
             });
 
-            it('firstly, transfers presenter rights to a first spectator', function () {
-                expect(commands.transferPresentership).to.have.been.calledWith(
-                    stub.commands.TRANSFER_PRESENTERSHIP(1, 2)
-                );
+            it('marks the first spectator as a presenter', function () {
+                expect(eventsQueue).to.have.length(1);
+                expect(eventsQueue[0]).to.be.an.instanceof(events.PresenterChangedEvent);
+                expect(eventsQueue[0]).to.eql(stub.events.PRESENTER_CHANGED(2));
             });
 
             it('secondly, removes a presenter prentending like (s)he was a spectator', function () {
