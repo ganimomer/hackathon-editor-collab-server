@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "mocha --require ./src/polyfill.js --recursive --reporter spec",
+    "test": "mocha --require ./src/polyfill.js --recursive --reporter spec ./test/commands.spec.js",
     "flow-test": "mocha --recursive --reporter spec ./test/test",
     "start": "node index.js"
   },

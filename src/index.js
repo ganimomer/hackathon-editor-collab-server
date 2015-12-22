@@ -24,11 +24,13 @@ const dispatch = event => {
 
 dispatch({});
 
+const api = new NetworkAPI(getState);
+
 io.on('connection', (socket) => {
     logger.spacer();
     console.log('connected', socket.id)
+    api.addSocket(socket.id, socket);
 
-    const api = new NetworkAPI(io, socket, getState);
     const commands = _.mapValues(require('./commands'), function (fn, key) {
         const commandName = fn.name;
         const curried = _.curry(fn)(dispatch, getState, api);
@@ -106,6 +108,8 @@ io.on('connection', (socket) => {
         commands.disconnectParticipant({
             participantId: socket.id,
         });
+
+        api.removeSocket(socket.id);
     });
 
     socket.on('error', (err) => {

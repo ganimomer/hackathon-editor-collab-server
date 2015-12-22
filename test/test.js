@@ -113,24 +113,18 @@ describe('Collaboration Server', function () {
       });
     });
 
-    it.skip('spectator gets a spectator-left event', function* () {
+    it('spectator gets a spectator-left event', function* () {
       yield presenter.connect();
 
       yield spectator.connect();
       const s1 = yield spectator.receiveSessionData();
-      console.log('s1', s1);
 
       yield secondSpectator.connect();
       const s2 = yield spectator.receiveSessionData();
-      console.log('s2', s2);
 
       const spectatorLeft = spectator.receiveSessionData();
       secondSpectator.disconnect();
       const sessionDataSentToSpectator = yield spectatorLeft;
-      console.log('sessionDataSentToSpectator', sessionDataSentToSpectator);
-
-      const s3 = yield spectator.receiveSessionData();
-      console.log('s3', s3);
 
       expect(sessionDataSentToSpectator).to.eql({
           presenterId: presenter.id,

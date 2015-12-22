@@ -17,7 +17,7 @@ function resolveSockets(state, { to, except, broadcastTo }) {
         recipients = _.isArray(to) ? to : [to];
     } else {
         const { presenter, spectators } = state.sessions.get(broadcastTo);
-        recipients = _.pluck(Array.from(spectators.values()).concat([presenter]), 'id');
+        recipients = [presenter.id, ...spectators.keys()];
     }
 
     if (except) {
@@ -32,27 +32,33 @@ function buildEmitter(eventName) {
     return function emitter(routeInfo, message) {
         logger.logNetworkRequest(eventName, routeInfo, message);
 
-        const { io, socket, getState } = this;
+        const { sockets, getState } = this;
         const state = getState();
         const recipients = resolveSockets(state, routeInfo);
-        const sockets = recipients.map(id => io.to(id));
+        const _sockets = recipients.map(id => sockets[id]);
 
         if (_.indexOf(recipients, undefined) >= 0) {
             console.log('some shit, bro');
         }
-        sockets.forEach(socket => socket.emit(eventName, message));
+
+        _sockets.forEach(socket => socket.emit(eventName, message));
         recipients.forEach(id => logger.logSocket(id));
         logger.spacer();
     };
 }
 
-function NetworkAPI(io, socket, getState) {
-    this.io = io;
-    this.socket = socket;
+function NetworkAPI(getState) {
+    this.sockets = {};
     this.getState = getState;
 }
 
 NetworkAPI.prototype = {
+    addSocket(id, socket) {
+        this.sockets[id] = socket;
+    },
+    removeSocket(id) {
+        delete this.sockets[id];
+    },
     requestSnapshot: buildEmitter('request-snapshot'),
     sendSession: buildEmitter('session'),
     informControlRequested: buildEmitter('control-requested'),

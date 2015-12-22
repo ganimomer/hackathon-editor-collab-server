@@ -6,9 +6,9 @@ const {
 module.exports = {
     INITIALIZE: {},
     SERVER_RESET: () => new events.ServerResetEvent(),
-    SESSION_CREATED: new events.SessionCreatedEvent({
-        sessionId: SITE(1),
-        presenter: PARTICIPANT_DETAILS(1),
+    SESSION_CREATED: i => new events.SessionCreatedEvent({
+        sessionId: SITE(i),
+        presenter: PARTICIPANT_DETAILS(i),
     }),
     SESSION_ABANDONED: () => new events.SessionAbandonedEvent({
         sessionId: SITE(1),

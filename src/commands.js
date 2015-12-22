@@ -104,15 +104,11 @@ const commands = {
                 presenter: participant,
             }));
 
+            const newSession = getSession(getState(), participant.id);
+
             api.sendSession(
                 { to: participant.id },
-                {
-                    id: participant.id,
-                    presenterId: participant.id,
-                    participants: {
-                        [participant.id]: participant.email,
-                    },
-                }
+                transformSessionIntoClientSession(newSession)
             );
         }
     },

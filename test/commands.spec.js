@@ -53,14 +53,13 @@ describe('commands:', () => {
         it('creates a session, when first participant connects to the site editing', function () {
             expect(eventsQueue).to.have.length(1);
             expect(eventsQueue[0]).to.be.an.instanceof(events.SessionCreatedEvent);
-            expect(eventsQueue[0]).to.eql(stub.events.SESSION_CREATED);
+            expect(eventsQueue[0]).to.eql(stub.events.SESSION_CREATED(1));
         });
 
         it('sends session information (without snapshot, presenterId===participant.id) to participant', function () {
             const firstParticipant = stub.constants.PARTICIPANT_DETAILS(1);
             expect(api.sendSession).to.have.been.calledWith({ to: firstParticipant.id },
                 {
-                    id: firstParticipant.id,
                     presenterId: firstParticipant.id,
                     participants: {
                         [firstParticipant.id]: firstParticipant.email,
@@ -73,7 +72,7 @@ describe('commands:', () => {
     describe('when participant wants to join an existing session', function () {
         beforeEach(function () {
             commands.requestSnapshot = sinon.spy();
-            state = reducer(state, stub.events.SESSION_CREATED);
+            state = reducer(state, stub.events.SESSION_CREATED(1));
 
             commands.handleJoinRequest(stub.commands.HANDLE_JOIN_REQUEST(2));
         });
@@ -93,7 +92,7 @@ describe('commands:', () => {
 
     describe('when presenter is sending a snapshot back', function () {
         beforeEach(function () {
-            state = reducer(state, stub.events.SESSION_CREATED);
+            state = reducer(state, stub.events.SESSION_CREATED(1));
             state = reducer(state, stub.events.PARTICIPANT_JOINING(2));
             state = reducer(state, stub.events.GHOST_BECAME_SPECTATOR(2));
             state = reducer(state, stub.events.PARTICIPANT_JOINING(3));
@@ -141,7 +140,7 @@ describe('commands:', () => {
             commands.disconnectSpectator = sinon.spy();
             commands.disconnectGhost = sinon.spy();
             sinon.spy(commands, 'transferPresentership');
-            state = reducer(state, stub.events.SESSION_CREATED);
+            state = reducer(state, stub.events.SESSION_CREATED(1));
         });
 
         describe('but there is at least one more spectator', function () {
@@ -215,7 +214,7 @@ describe('commands:', () => {
         beforeEach(function () {
             api.sendSession = sinon.spy();
 
-            state = reducer(state, stub.events.SESSION_CREATED);
+            state = reducer(state, stub.events.SESSION_CREATED(1));
             state = reducer(state, stub.events.PARTICIPANT_JOINING(2));
             state = reducer(state, stub.events.PARTICIPANT_JOINING(3));
             state = reducer(state, stub.events.GHOST_BECAME_SPECTATOR(2));
@@ -272,7 +271,7 @@ describe('commands:', () => {
         beforeEach(function () {
             api.sendSession = sinon.spy();
 
-            state = reducer(state, stub.events.SESSION_CREATED);
+            state = reducer(state, stub.events.SESSION_CREATED(1));
             state = reducer(state, stub.events.PARTICIPANT_JOINING(2));
             state = reducer(state, stub.events.PARTICIPANT_JOINING(3));
             state = reducer(state, stub.events.GHOST_BECAME_SPECTATOR(2));
@@ -318,7 +317,7 @@ describe('commands:', () => {
 
     describe('when presentership is transferred by spectator or to ghost ', function () {
         beforeEach(function () {
-            state = reducer(state, stub.events.SESSION_CREATED);
+            state = reducer(state, stub.events.SESSION_CREATED(1));
             state = reducer(state, stub.events.PARTICIPANT_JOINING(2));
             state = reducer(state, stub.events.PARTICIPANT_JOINING(3));
             state = reducer(state, stub.events.GHOST_BECAME_SPECTATOR(2));
@@ -337,7 +336,7 @@ describe('commands:', () => {
 
     describe('when a regular spectator is disconnected', function () {
         beforeEach(function () {
-            state = reducer(state, stub.events.SESSION_CREATED);
+            state = reducer(state, stub.events.SESSION_CREATED(1));
             state = reducer(state, stub.events.PARTICIPANT_JOINING(2));
             state = reducer(state, stub.events.GHOST_BECAME_SPECTATOR(2));
             state = reducer(state, stub.events.PRESENTER_CHANGED(2));
@@ -365,7 +364,7 @@ describe('commands:', () => {
 
     describe('when a ghost is disconnected', function () {
         beforeEach(function () {
-            state = reducer(state, stub.events.SESSION_CREATED);
+            state = reducer(state, stub.events.SESSION_CREATED(1));
             state = reducer(state, stub.events.PARTICIPANT_JOINING(2));
         });
 
@@ -375,6 +374,33 @@ describe('commands:', () => {
             expect(eventsQueue).to.have.length(1);
             expect(eventsQueue[0]).to.be.an.instanceof(events.GhostDisconnectedEvent);
             expect(eventsQueue[0]).to.eql(stub.events.GHOST_DISCONNECTED(2));
+        });
+    });
+
+    describe('when two people join different sites', function () {
+        beforeEach(function () {
+            api.sendSession = sinon.spy();
+            state = reducer(state, stub.events.SESSION_CREATED(2));
+
+            commands.handleJoinRequest(stub.commands.HANDLE_JOIN_REQUEST(1));
+        });
+
+        it('should place them to different assholes', function () {
+            expect(eventsQueue).to.have.length(1);
+            expect(eventsQueue[0]).to.be.an.instanceof(events.SessionCreatedEvent);
+            expect(eventsQueue[0]).to.eql(stub.events.SESSION_CREATED(1));
+        });
+
+        it('should send session like this', function () {
+            expect(api.sendSession).to.have.been.calledWith(
+                { to: stub.constants.SOCKET(1) },
+                {
+                    presenterId: p1.id,
+                    participants: {
+                        [p1.id]: p1.email,
+                    },
+                }
+            );
         });
     });
 });
